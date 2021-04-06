@@ -61,7 +61,7 @@ const (
 	catalogObjectTypeQuickAmountsSettings      = "QUICK_AMOUNTS_SETTINGS"
 )
 
-// We don't store the variations struct to prevent drift with the server
+// We don't store the variations struct to prevent drift with the server.
 type TerraformCatalogItem struct {
 	*objects.CatalogItem
 	Variations []*objects.CatalogObject `json:"-"`
@@ -86,7 +86,7 @@ func resourceCatalogObject() *schema.Resource {
 			catalogObjectCatalogV1IDs: &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     CatalogV1ID,
+				Elem:     catalogV1IDSchema,
 			},
 			catalogObjectCategoryData: &schema.Schema{
 				Type:     schema.TypeMap,
@@ -316,6 +316,7 @@ func resourceToCatalogObject(d *schema.ResourceData) (*objects.CatalogObject, er
 		list := presentAtLocationIDs.([]interface{})
 
 		object.PresentAtLocationIDs = make([]string, len(list))
+
 		for i, location := range list {
 			var ok bool
 			if object.PresentAtLocationIDs[i], ok = location.(string); !ok {
@@ -328,6 +329,7 @@ func resourceToCatalogObject(d *schema.ResourceData) (*objects.CatalogObject, er
 		list := absentAtLocationIDs.([]interface{})
 
 		object.AbsentAtLocationIDs = make([]string, len(list))
+
 		for i, location := range list {
 			var ok bool
 			if object.AbsentAtLocationIDs[i], ok = location.(string); !ok {

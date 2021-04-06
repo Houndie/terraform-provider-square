@@ -35,6 +35,8 @@ func removedConfig(token string) string {
 }
 
 func TestAccCatalogObject(t *testing.T) {
+	t.Parallel()
+
 	token := os.Getenv("TEST_TOKEN")
 	if token == "" {
 		t.Log("Test skipped as TEST_TOKEN not set")
@@ -43,7 +45,7 @@ func TestAccCatalogObject(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"test-provider": func() (*schema.Provider, error) { return Provider(), nil },
+			"test-provider": func() (*schema.Provider, error) { return Provider(), nil }, //nolint:unparam
 		},
 		Steps: []resource.TestStep{
 			{
@@ -69,6 +71,7 @@ func checkCatalogObjectExists(resourceName string) resource.TestCheckFunc {
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("Widget ID is not set")
 		}
+
 		return nil
 	}
 }
@@ -80,6 +83,7 @@ func checkCatalogObjectDoesntExist(resourceName string) resource.TestCheckFunc {
 		if ok {
 			return fmt.Errorf("Found: %s", resourceName)
 		}
+
 		return nil
 	}
 }

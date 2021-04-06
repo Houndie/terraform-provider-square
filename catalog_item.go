@@ -116,6 +116,7 @@ func toDiag(warnings []string, errors []error) diag.Diagnostics {
 			Summary:  warning,
 		})
 	}
+
 	for _, err := range errors {
 		result = append(result, diag.Diagnostic{
 			Severity: diag.Error,
@@ -146,6 +147,7 @@ func catalogItemSchemaToObject(input map[string]interface{}) (*objects.CatalogIt
 	if modifierListInfo, ok := input[catalogItemModifierListInfo]; ok {
 		modifierListInfoType := modifierListInfo.([]map[string]interface{})
 		result.ModifierListInfo = make([]*objects.CatalogItemModifierListInfo, len(modifierListInfoType))
+
 		for i, info := range modifierListInfoType {
 			result.ModifierListInfo[i] = catalogItemModifierListInfoSchemaToObject(info)
 		}
@@ -163,6 +165,7 @@ func catalogItemSchemaToObject(input map[string]interface{}) (*objects.CatalogIt
 	if options, ok := input[catalogItemItemOptions]; ok {
 		optionsType := options.([]map[string]interface{})
 		result.ItemOptions = make([]*objects.CatalogItemOptionForItem, len(optionsType))
+
 		for i, option := range optionsType {
 			result.ItemOptions[i] = catalogItemOptionForItemSchemaToObject(option)
 		}
@@ -193,9 +196,11 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) (map[string]interface
 		for i, info := range input.ModifierListInfo {
 			resultModifierListInfo[i] = catalogItemModifierListInfoObjectToSchema(info)
 		}
+
 		result[catalogItemModifierListInfo] = resultModifierListInfo
 	}
 
+	//nolint:exhaustive
 	switch input.ProductType {
 	case objects.CatalogItemProductTypeRegular:
 		result[catalogItemProductType] = catalogItemProductTypeRegular
@@ -210,6 +215,7 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) (map[string]interface
 		for i, o := range input.ItemOptions {
 			resultOptions[i] = catalogItemOptionForItemObjectToSchema(o)
 		}
+
 		result[catalogItemItemOptions] = resultOptions
 	}
 

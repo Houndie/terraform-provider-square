@@ -83,6 +83,7 @@ func catalogItemModifierListInfoSchemaToObject(input map[string]interface{}) *ob
 	if overrides, ok := input[catalogItemModifierListInfoModifierOverrides]; ok {
 		overridesType := overrides.([]map[string]interface{})
 		result.ModifierOverrides = make([]*objects.CatalogModifierOverride, len(overridesType))
+
 		for i, override := range overridesType {
 			result.ModifierOverrides[i] = catalogModifierOverrideSchemaToObject(override)
 		}

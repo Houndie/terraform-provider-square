@@ -15,6 +15,7 @@ import (
 const (
 	ProviderAccessToken = "access_token"
 	ProviderEnvironment = "environment"
+	ProviderTimeout     = "timeout"
 )
 
 func Provider() *schema.Provider {
@@ -28,6 +29,11 @@ func Provider() *schema.Provider {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "sandbox",
+			},
+			ProviderTimeout: &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  30, //nolint:gomnd
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -45,7 +51,7 @@ func Provider() *schema.Provider {
 			}
 
 			httpClient := &http.Client{
-				Timeout: 30 * time.Second,
+				Timeout: time.Duration(d.Get(ProviderTimeout).(int)) * time.Second, //nolint:durationcheck
 			}
 
 			client, err := square.NewClient(d.Get(ProviderAccessToken).(string), environment, httpClient)
