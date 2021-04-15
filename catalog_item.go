@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/Houndie/square-go/objects"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -28,6 +26,26 @@ const (
 	catalogItemProductTypeRegular             = "REGULAR"
 	catalogItemProductTypeAppointmentsService = "APPOINTMENTS_SERVICE"
 )
+
+var (
+	catalogItemProductTypeStrToEnum = map[string]objects.CatalogItemProductType{
+		catalogItemProductTypeRegular:             objects.CatalogItemProductTypeRegular,
+		catalogItemProductTypeAppointmentsService: objects.CatalogItemProductTypeAppointmentsService,
+	}
+
+	catalogItemProductTypeEnumToStr = map[objects.CatalogItemProductType]string{
+		objects.CatalogItemProductTypeRegular:             catalogItemProductTypeRegular,
+		objects.CatalogItemProductTypeAppointmentsService: catalogItemProductTypeAppointmentsService,
+	}
+
+	catalogItemProductTypeValidate = stringInSlice([]string{catalogItemProductTypeRegular, catalogItemProductTypeAppointmentsService}, false)
+)
+
+func stringInSlice(slice []string, ignoreCase bool) schema.SchemaValidateDiagFunc {
+	return func(input interface{}, path cty.Path) diag.Diagnostics {
+		return toDiag(validation.StringInSlice(slice, ignoreCase)(input, ""))
+	}
+}
 
 var catalogItemSchema = &schema.Resource{
 	Schema: map[string]*schema.Schema{
@@ -81,15 +99,10 @@ var catalogItemSchema = &schema.Resource{
 			Elem:     catalogItemModifierListInfoSchema,
 		},
 		catalogItemProductType: &schema.Schema{
-			Type:     schema.TypeString,
-			Optional: true,
-			ValidateDiagFunc: func(input interface{}, path cty.Path) diag.Diagnostics {
-				return toDiag(validation.StringInSlice([]string{
-					catalogItemProductTypeRegular,
-					catalogItemProductTypeAppointmentsService,
-				}, false)(input, ""))
-			},
-			Default: catalogItemProductTypeRegular,
+			Type:             schema.TypeString,
+			Optional:         true,
+			ValidateDiagFunc: catalogItemProductTypeValidate,
+			Default:          catalogItemProductTypeRegular,
 		},
 		catalogItemSkipModifierScreen: &schema.Schema{
 			Type:     schema.TypeBool,
@@ -127,7 +140,7 @@ func toDiag(warnings []string, errors []error) diag.Diagnostics {
 	return result
 }
 
-func catalogItemSchemaToObject(input map[string]interface{}) (*objects.CatalogItem, error) {
+func catalogItemSchemaToObject(input map[string]interface{}) *objects.CatalogItem {
 	result := &objects.CatalogItem{
 		Name:                    input[catalogItemName].(string),
 		Description:             input[catalogItemDescription].(string),
@@ -138,6 +151,7 @@ func catalogItemSchemaToObject(input map[string]interface{}) (*objects.CatalogIt
 		AvailableElectronically: input[catalogItemAvailableElectronically].(bool),
 		CategoryID:              input[catalogItemCategoryID].(string),
 		SkipModifierScreen:      input[catalogItemSkipModifierScreen].(bool),
+		ProductType:             catalogItemProductTypeStrToEnum[input[catalogItemProductType].(string)],
 	}
 
 	if taxIDs, ok := input[catalogItemTaxIDs]; ok {
@@ -153,15 +167,6 @@ func catalogItemSchemaToObject(input map[string]interface{}) (*objects.CatalogIt
 		}
 	}
 
-	switch input[catalogItemProductType].(string) {
-	case catalogItemProductTypeRegular:
-		result.ProductType = objects.CatalogItemProductTypeRegular
-	case catalogItemProductTypeAppointmentsService:
-		result.ProductType = objects.CatalogItemProductTypeAppointmentsService
-	default:
-		return nil, fmt.Errorf("unknown value for product type: %s", input[catalogItemProductType].(string))
-	}
-
 	if options, ok := input[catalogItemItemOptions]; ok {
 		optionsType := options.([]map[string]interface{})
 		result.ItemOptions = make([]*objects.CatalogItemOptionForItem, len(optionsType))
@@ -171,10 +176,10 @@ func catalogItemSchemaToObject(input map[string]interface{}) (*objects.CatalogIt
 		}
 	}
 
-	return result, nil
+	return result
 }
 
-func catalogItemObjectToSchema(input *objects.CatalogItem) (map[string]interface{}, error) {
+func catalogItemObjectToSchema(input *objects.CatalogItem) map[string]interface{} {
 	result := map[string]interface{}{
 		catalogItemName:                    input.Name,
 		catalogItemDescription:             input.Description,
@@ -185,6 +190,7 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) (map[string]interface
 		catalogItemAvailableElectronically: input.AvailableElectronically,
 		catalogItemCategoryID:              input.CategoryID,
 		catalogItemSkipModifierScreen:      input.SkipModifierScreen,
+		catalogItemProductType:             catalogItemProductTypeEnumToStr[input.ProductType],
 	}
 
 	if input.TaxIDs != nil {
@@ -200,16 +206,6 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) (map[string]interface
 		result[catalogItemModifierListInfo] = resultModifierListInfo
 	}
 
-	//nolint:exhaustive
-	switch input.ProductType {
-	case objects.CatalogItemProductTypeRegular:
-		result[catalogItemProductType] = catalogItemProductTypeRegular
-	case objects.CatalogItemProductTypeAppointmentsService:
-		result[catalogItemProductType] = catalogItemProductTypeAppointmentsService
-	default:
-		return nil, fmt.Errorf("cannot store product type %s", input.ProductType)
-	}
-
 	if input.ItemOptions != nil {
 		resultOptions := make([]map[string]interface{}, len(input.ItemOptions))
 		for i, o := range input.ItemOptions {
@@ -219,5 +215,5 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) (map[string]interface
 		result[catalogItemItemOptions] = resultOptions
 	}
 
-	return result, nil
+	return result
 }

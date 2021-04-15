@@ -14,11 +14,12 @@ var catalogV1IDSchema = &schema.Resource{
 	Schema: map[string]*schema.Schema{
 		catalogV1IDCatalogV1ID: &schema.Schema{
 			Type:     schema.TypeString,
-			Optional: true,
+			Required: true,
 		},
 		catalogV1IDLocationID: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
+			Default:  "",
 		},
 	},
 }
@@ -31,15 +32,8 @@ func catalogV1IDObjectToSchema(input *objects.CatalogV1ID) map[string]interface{
 }
 
 func catalogV1IDSchemaToObject(input map[string]interface{}) *objects.CatalogV1ID {
-	result := &objects.CatalogV1ID{}
-
-	if catalogV1ID, ok := input[catalogV1IDCatalogV1ID]; ok {
-		result.CatalogV1ID = catalogV1ID.(string)
+	return &objects.CatalogV1ID{
+		CatalogV1ID: input[catalogV1IDCatalogV1ID].(string),
+		LocationID:  input[catalogV1IDLocationID].(string),
 	}
-
-	if locationID, ok := input[catalogV1IDLocationID]; ok {
-		result.LocationID = locationID.(string)
-	}
-
-	return result
 }
