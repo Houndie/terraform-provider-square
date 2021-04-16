@@ -80,32 +80,26 @@ var measurementUnitSchema = &schema.Resource{
 		measurementUnitAreaUnit: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		measurementUnitLengthUnit: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		measurementUnitVolumeUnit: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		measurementUnitWeightUnit: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		measurementUnitGenericUnit: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		measurementUnitTimeUnit: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		measurementUnitType: &schema.Schema{
 			Type:             schema.TypeString,
@@ -120,7 +114,7 @@ func measurementUnitSchemaToObject(input map[string]interface{}) (*objects.Measu
 
 	switch input[measurementUnitType].(string) {
 	case measurementUnitTypeCustom:
-		result.Type = measurementUnitCustomSchemaToObject(input[measurementUnitCustomUnit].([]map[string]interface{})[0])
+		result.Type = measurementUnitCustomSchemaToObject(input[measurementUnitCustomUnit].(*schema.Set).List()[0].(map[string]interface{}))
 	case measurementUnitTypeArea:
 		unit := input[measurementUnitAreaUnit].(string)
 		if unit == "" {
@@ -176,7 +170,7 @@ func measurementUnitObjectToSchema(input *objects.MeasurementUnit) (map[string]i
 	switch t := input.Type.(type) {
 	case *objects.MeasurementUnitCustom:
 		result[measurementUnitType] = measurementUnitTypeCustom
-		result[measurementUnitCustomUnit] = []map[string]interface{}{measurementUnitCustomObjectToSchema(t)}
+		result[measurementUnitCustomUnit] = schema.NewSet(schema.HashResource(measurementUnitCustomSchema), []interface{}{measurementUnitCustomObjectToSchema(t)})
 	case objects.MeasurementUnitArea:
 		result[measurementUnitType] = measurementUnitTypeArea
 		result[measurementUnitAreaUnit] = string(t)

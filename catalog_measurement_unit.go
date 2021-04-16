@@ -28,7 +28,7 @@ var catalogMeasurementUnitSchema = &schema.Resource{
 }
 
 func catalogMeasurementUnitSchemaToObject(input map[string]interface{}) (*objects.CatalogMeasurementUnit, error) {
-	measurementUnit, err := measurementUnitSchemaToObject(input[catalogMeasurementUnitMeasurementUnit].([]map[string]interface{})[0])
+	measurementUnit, err := measurementUnitSchemaToObject(input[catalogMeasurementUnitMeasurementUnit].(*schema.Set).List()[0].(map[string]interface{}))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing mesurement unit: %w", err)
 	}
@@ -46,7 +46,7 @@ func catalogMeasurementUnitObjectToSchema(input *objects.CatalogMeasurementUnit)
 	}
 
 	return map[string]interface{}{
-		catalogMeasurementUnitMeasurementUnit: []map[string]interface{}{measurementUnit},
+		catalogMeasurementUnitMeasurementUnit: schema.NewSet(schema.HashResource(measurementUnitSchema), []interface{}{measurementUnit}),
 		catalogMeasurementUnitPrecision:       input.Precision,
 	}, nil
 }

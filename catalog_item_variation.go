@@ -91,7 +91,6 @@ var itemVariationLocationOverridesSchema = &schema.Resource{
 		itemVariationLocationOverridesTrackInventory: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		itemVariationLocationOverridesInventoryAlertType: &schema.Schema{
 			Type:             schema.TypeString,
@@ -102,75 +101,48 @@ var itemVariationLocationOverridesSchema = &schema.Resource{
 		itemVariationLocationOverridesInventoryAlertThreshold: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 	},
-}
-
-func inventoryAlertSchemaToObject(alert string, threshold *int) (objects.InventoryAlertType, error) {
-	switch alert {
-	case inventoryAlertTypeNone:
-		return &objects.InventoryAlertTypeNone{}, nil
-	case inventoryAlertTypeLowQuantity:
-		if threshold == nil {
-			return nil, errors.New("alert type set to \"low quantity\" but threshold not set")
-		}
-		return &objects.InventoryAlertTypeLowQuantity{
-			Threshold: *threshold,
-		}, nil
-	}
-
-	return nil, fmt.Errorf("unknown inventory alert type found: %s", alert)
-
 }
 
 func itemVariationLocationOverridesSchemaToObject(input map[string]interface{}) (*objects.ItemVariationLocationOverrides, error) {
 	result := &objects.ItemVariationLocationOverrides{
 		LocationID:     input[itemVariationLocationOverridesLocationID].(string),
 		TrackInventory: input[itemVariationLocationOverridesTrackInventory].(bool),
-		PriceMoney:     moneySchemaToObject(input[itemVariationLocationOverridesPriceMoney].([]map[string]interface{})[0]),
+		PriceMoney:     moneySchemaToObject(input[itemVariationLocationOverridesPriceMoney].(*schema.Set).List()[0].(map[string]interface{})),
 		PricingType:    catalogPricingTypeStrToEnum[input[itemVariationLocationOverridesPricingType].(string)],
 	}
 
-	var (
-		err       error
-		threshold *int
-	)
-
-	if t, ok := input[itemVariationLocationOverridesInventoryAlertThreshold]; ok {
-		tInt := t.(int)
-		threshold = &tInt
-	}
-
-	if result.InventoryAlertType, err = inventoryAlertSchemaToObject(input[itemVariationLocationOverridesInventoryAlertType].(string), threshold); err != nil {
-		return nil, err
+	switch input[itemVariationLocationOverridesInventoryAlertType].(string) {
+	case inventoryAlertTypeNone:
+		result.InventoryAlertType = &objects.InventoryAlertTypeNone{}
+	case inventoryAlertTypeLowQuantity:
+		result.InventoryAlertType = &objects.InventoryAlertTypeLowQuantity{
+			Threshold: input[itemVariationLocationOverridesInventoryAlertThreshold].(int),
+		}
+	default:
+		return nil, errors.New("unknown inventory alert type found")
 	}
 
 	return result, nil
-}
-
-func inventoryAlertObjectToSchema(input objects.InventoryAlertType) (string, *int, error) {
-	switch t := input.(type) {
-	case *objects.InventoryAlertTypeNone:
-		return inventoryAlertTypeNone, nil, nil
-	case *objects.InventoryAlertTypeLowQuantity:
-		return inventoryAlertTypeLowQuantity, &t.Threshold, nil
-	default:
-		return "", nil, errors.New("unknown inventory alert type found")
-	}
 }
 
 func itemVariationLocationOverridesObjectToSchema(input *objects.ItemVariationLocationOverrides) (map[string]interface{}, error) {
 	result := map[string]interface{}{
 		itemVariationLocationOverridesLocationID:     input.LocationID,
 		itemVariationLocationOverridesTrackInventory: input.TrackInventory,
-		itemVariationLocationOverridesPriceMoney:     []map[string]interface{}{moneyObjectToSchema(input.PriceMoney)},
+		itemVariationLocationOverridesPriceMoney:     schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.PriceMoney)}),
 		itemVariationLocationOverridesPricingType:    catalogPricingTypeEnumToStr[input.PricingType],
 	}
 
-	var err error
-	if result[itemVariationLocationOverridesInventoryAlertType], result[itemVariationLocationOverridesInventoryAlertThreshold], err = inventoryAlertObjectToSchema(input.InventoryAlertType); err != nil {
-		return nil, err
+	switch t := input.InventoryAlertType.(type) {
+	case *objects.InventoryAlertTypeNone:
+		result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeNone
+	case *objects.InventoryAlertTypeLowQuantity:
+		result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeLowQuantity
+		result[itemVariationLocationOverridesInventoryAlertThreshold] = t.Threshold
+	default:
+		return nil, errors.New("unknown inventory alert type found")
 	}
 
 	return result, nil
@@ -209,17 +181,14 @@ var catalogItemVariationSchema = &schema.Resource{
 		catalogItemVariationSKU: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemVariationUPC: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemVariationOrdinal: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 		catalogItemVariationPricingType: &schema.Schema{
 			Type:             schema.TypeString,
@@ -240,7 +209,6 @@ var catalogItemVariationSchema = &schema.Resource{
 		catalogItemVariationTrackInventory: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogItemVariationInventoryAlertType: &schema.Schema{
 			Type:     schema.TypeString,
@@ -250,22 +218,18 @@ var catalogItemVariationSchema = &schema.Resource{
 		catalogItemVariationInventoryAlertThreshold: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 		catalogItemVariationUserData: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemVariationServiceDuration: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 		catalogItemVariationAvailableForBooking: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogItemVariationItemOptionValues: &schema.Schema{
 			Type:     schema.TypeList,
@@ -275,13 +239,11 @@ var catalogItemVariationSchema = &schema.Resource{
 		catalogItemVariationMeasurementUnitID: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemVariationTeamMemberIDs: &schema.Schema{
 			Type:     schema.TypeList,
 			Optional: true,
 			Elem:     &schema.Schema{Type: schema.TypeString},
-			Default:  []string{},
 		},
 	},
 }
@@ -293,47 +255,48 @@ func catalogItemVariationSchemaToObject(input map[string]interface{}) (*objects.
 		SKU:                 input[catalogItemVariationSKU].(string),
 		UPC:                 input[catalogItemVariationUPC].(string),
 		Ordinal:             input[catalogItemVariationOrdinal].(int),
-		PriceMoney:          moneySchemaToObject(input[catalogItemVariationPriceMoney].([]map[string]interface{})[0]),
+		PriceMoney:          moneySchemaToObject(input[catalogItemVariationPriceMoney].(*schema.Set).List()[0].(map[string]interface{})),
 		TrackInventory:      input[catalogItemVariationTrackInventory].(bool),
 		UserData:            input[catalogItemVariationUserData].(string),
 		ServiceDuration:     input[catalogItemVariationServiceDuration].(int),
 		AvailableForBooking: input[catalogItemVariationAvailableForBooking].(bool),
 		MeasurementUnitID:   input[catalogItemVariationMeasurementUnitID].(string),
-		TeamMemberIDs:       input[catalogItemVariationTeamMemberIDs].([]string),
 		PricingType:         catalogPricingTypeStrToEnum[input[catalogItemVariationPricingType].(string)],
 	}
 
-	if overrides, ok := input[catalogItemVariationLocationOverrides]; ok {
-		overrideSchema := overrides.([]map[string]interface{})
-		result.LocationOverrides = make([]*objects.ItemVariationLocationOverrides, len(overrideSchema))
-		for i, override := range overrideSchema {
+	if ids := input[catalogItemVariationTeamMemberIDs].([]interface{}); len(ids) > 0 {
+		result.TeamMemberIDs = make([]string, len(ids))
+		for i, id := range ids {
+			result.TeamMemberIDs[i] = id.(string)
+		}
+	}
+
+	if overrides := input[catalogItemVariationLocationOverrides].([]interface{}); len(overrides) > 0 {
+		result.LocationOverrides = make([]*objects.ItemVariationLocationOverrides, len(overrides))
+		for i, override := range overrides {
 			var err error
-			result.LocationOverrides[i], err = itemVariationLocationOverridesSchemaToObject(override)
+			result.LocationOverrides[i], err = itemVariationLocationOverridesSchemaToObject(override.(map[string]interface{}))
 			if err != nil {
 				return nil, fmt.Errorf("error parsing location override: %w", err)
 			}
 		}
 	}
 
-	var (
-		err       error
-		threshold *int
-	)
-
-	if t, ok := input[itemVariationLocationOverridesInventoryAlertThreshold]; ok {
-		tInt := t.(int)
-		threshold = &tInt
+	switch input[itemVariationLocationOverridesInventoryAlertType].(string) {
+	case inventoryAlertTypeNone:
+		result.InventoryAlertType = &objects.InventoryAlertTypeNone{}
+	case inventoryAlertTypeLowQuantity:
+		result.InventoryAlertType = &objects.InventoryAlertTypeLowQuantity{
+			Threshold: input[itemVariationLocationOverridesInventoryAlertThreshold].(int),
+		}
+	default:
+		return nil, errors.New("unknown inventory alert type found")
 	}
 
-	if result.InventoryAlertType, err = inventoryAlertSchemaToObject(input[itemVariationLocationOverridesInventoryAlertType].(string), threshold); err != nil {
-		return nil, err
-	}
-
-	if values, ok := input[catalogItemVariationItemOptionValues]; ok {
-		valuesSchema := values.([]map[string]interface{})
-		result.ItemOptionValues = make([]*objects.CatalogItemOptionValueForItemVariation, len(valuesSchema))
-		for i, value := range valuesSchema {
-			result.ItemOptionValues[i] = catalogItemOptionValueForItemVariationSchemaToObject(value)
+	if values := input[catalogItemVariationItemOptionValues].([]interface{}); len(values) > 0 {
+		result.ItemOptionValues = make([]*objects.CatalogItemOptionValueForItemVariation, len(values))
+		for i, value := range values {
+			result.ItemOptionValues[i] = catalogItemOptionValueForItemVariationSchemaToObject(value.(map[string]interface{}))
 		}
 	}
 
@@ -347,18 +310,21 @@ func catalogItemVariationObjectToSchema(input *objects.CatalogItemVariation) (ma
 		catalogItemVariationSKU:                 input.SKU,
 		catalogItemVariationUPC:                 input.UPC,
 		catalogItemVariationOrdinal:             input.Ordinal,
-		catalogItemVariationPriceMoney:          []map[string]interface{}{moneyObjectToSchema(input.PriceMoney)},
+		catalogItemVariationPriceMoney:          schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.PriceMoney)}),
 		catalogItemVariationTrackInventory:      input.TrackInventory,
 		catalogItemVariationUserData:            input.UserData,
 		catalogItemVariationServiceDuration:     input.ServiceDuration,
 		catalogItemVariationAvailableForBooking: input.AvailableForBooking,
 		catalogItemVariationMeasurementUnitID:   input.MeasurementUnitID,
-		catalogItemVariationTeamMemberIDs:       input.TeamMemberIDs,
 		catalogItemVariationPricingType:         catalogPricingTypeEnumToStr[input.PricingType],
 	}
 
+	if input.TeamMemberIDs != nil {
+		result[catalogItemVariationTeamMemberIDs] = input.TeamMemberIDs
+	}
+
 	if input.LocationOverrides != nil {
-		overrides := make([]map[string]interface{}, len(input.LocationOverrides))
+		overrides := make([]interface{}, len(input.LocationOverrides))
 		for i, override := range input.LocationOverrides {
 			var err error
 			overrides[i], err = itemVariationLocationOverridesObjectToSchema(override)
@@ -367,21 +333,26 @@ func catalogItemVariationObjectToSchema(input *objects.CatalogItemVariation) (ma
 			}
 		}
 
-		result[catalogItemVariationLocationOverrides] = overrides
+		result[catalogItemVariationLocationOverrides] = schema.NewSet(schema.HashResource(itemVariationLocationOverridesSchema), overrides)
 	}
 
-	var err error
-	if result[itemVariationLocationOverridesInventoryAlertType], result[itemVariationLocationOverridesInventoryAlertThreshold], err = inventoryAlertObjectToSchema(input.InventoryAlertType); err != nil {
-		return nil, err
+	switch t := input.InventoryAlertType.(type) {
+	case *objects.InventoryAlertTypeNone:
+		result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeNone
+	case *objects.InventoryAlertTypeLowQuantity:
+		result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeLowQuantity
+		result[itemVariationLocationOverridesInventoryAlertThreshold] = t.Threshold
+	default:
+		return nil, errors.New("unknown inventory alert type found")
 	}
 
 	if input.ItemOptionValues != nil {
-		values := make([]map[string]interface{}, len(input.ItemOptionValues))
+		values := make([]interface{}, len(input.ItemOptionValues))
 		for i, value := range input.ItemOptionValues {
 			values[i] = catalogItemOptionValueForItemVariationObjectToSchema(value)
 		}
 
-		result[catalogItemVariationItemOptionValues] = values
+		result[catalogItemVariationItemOptionValues] = schema.NewSet(schema.HashResource(catalogItemOptionValueForItemVariationSchema), values)
 	}
 
 	return result, nil

@@ -17,12 +17,10 @@ var catalogItemOptionSchema = &schema.Resource{
 		catalogItemOptionDescription: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemOptionDisplayName: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemOptionName: &schema.Schema{
 			Type:     schema.TypeString,
@@ -31,7 +29,6 @@ var catalogItemOptionSchema = &schema.Resource{
 		catalogItemOptionShowColors: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 	},
 }

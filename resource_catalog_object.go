@@ -19,6 +19,7 @@ const (
 	catalogObjectCatalogV1IDs                  = "catalog_v1_ids"
 	catalogObjectCategoryData                  = "category_data"
 	catalogObjectCustomAttributeDefinitionData = "custom_attribute_definition_data"
+	catalogObjectCustomAttributeValues         = "custom_attribute_values"
 	catalogObjectDiscountData                  = "discount_data"
 	catalogObjectImageData                     = "image_data"
 	catalogObjectImageID                       = "image_id"
@@ -133,6 +134,11 @@ func resourceCatalogObject() *schema.Resource {
 		UpdateContext: resourceCatalogObjectUpdate,
 		DeleteContext: resourceCatalogObjectDelete,
 		Schema: map[string]*schema.Schema{
+			catalogObjectCustomAttributeValues: &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     catalogCustomAttributeValueSchema,
+			},
 			catalogObjectType: &schema.Schema{
 				Type:             schema.TypeString,
 				Required:         true,
@@ -175,7 +181,6 @@ func resourceCatalogObject() *schema.Resource {
 			catalogObjectImageID: &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "",
 			},
 			catalogObjectItemData: &schema.Schema{
 				Type:     schema.TypeSet,
@@ -268,14 +273,14 @@ func resourceCatalogObject() *schema.Resource {
 			catalogObjectVersion: &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  0,
+				Computed: true,
 			},
 		},
 	}
 }
 
 func resourceCatalogObjectCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client, ok := m.(square.Client)
+	client, ok := m.(*square.Client)
 	if !ok {
 		return diag.Errorf("unable to create client from interface")
 	}
@@ -306,7 +311,7 @@ func resourceCatalogObjectCreate(ctx context.Context, d *schema.ResourceData, m 
 }
 
 func resourceCatalogObjectRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client, ok := m.(square.Client)
+	client, ok := m.(*square.Client)
 	if !ok {
 		return diag.Errorf("unable to create client from interface")
 	}
@@ -326,7 +331,7 @@ func resourceCatalogObjectRead(ctx context.Context, d *schema.ResourceData, m in
 }
 
 func resourceCatalogObjectUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client, ok := m.(square.Client)
+	client, ok := m.(*square.Client)
 	if !ok {
 		return diag.Errorf("unable to create client from interface")
 	}
@@ -357,7 +362,7 @@ func resourceCatalogObjectUpdate(ctx context.Context, d *schema.ResourceData, m 
 }
 
 func resourceCatalogObjectDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client, ok := m.(square.Client)
+	client, ok := m.(*square.Client)
 	if !ok {
 		return diag.Errorf("unable to create client from interface")
 	}
@@ -388,19 +393,43 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 	}
 
 	if ids, ok := d.GetOk(catalogObjectCatalogV1IDs); ok {
-		idList := ids.([]map[string]interface{})
+		idList := ids.([]interface{})
 		result.CatalogV1IDs = make([]*objects.CatalogV1ID, len(idList))
 		for i, id := range idList {
-			result.CatalogV1IDs[i] = catalogV1IDSchemaToObject(id)
+			result.CatalogV1IDs[i] = catalogV1IDSchemaToObject(id.(map[string]interface{}))
 		}
 	}
 
 	if ids, ok := d.GetOk(catalogObjectPresentAtLocationIDs); ok {
-		result.PresentAtLocationIDs = ids.([]string)
+		idList := ids.([]interface{})
+		result.PresentAtLocationIDs = make([]string, len(idList))
+		for i, id := range idList {
+			result.PresentAtLocationIDs[i] = id.(string)
+		}
 	}
 
 	if ids, ok := d.GetOk(catalogObjectAbsentAtLocationIDs); ok {
-		result.AbsentAtLocationIDs = ids.([]string)
+		idList := ids.([]interface{})
+		result.AbsentAtLocationIDs = make([]string, len(idList))
+		for i, id := range idList {
+			result.AbsentAtLocationIDs[i] = id.(string)
+		}
+	}
+
+	if values, ok := d.GetOk(catalogObjectCustomAttributeValues); ok {
+		valueList := values.([]interface{})
+		valueMap := map[string]*objects.CatalogCustomAttributeValue{}
+
+		for _, value := range valueList {
+			valueObject, err := catalogCustomAttributeValueSchemaToObject(value.(map[string]interface{}))
+			if err != nil {
+				return nil, fmt.Errorf("error constructing catalog custom attribute value: %w", err)
+			}
+
+			valueMap[valueObject.Key] = valueObject
+		}
+
+		result.CustomAttributeValues = valueMap
 	}
 
 	switch d.Get(catalogObjectType) {
@@ -410,14 +439,14 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 			return nil, errors.New("object type item set, but item data not found")
 		}
 
-		result.Type = catalogItemSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogItemSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeCategory:
 		data, ok := d.GetOk(catalogObjectCategoryData)
 		if !ok {
 			return nil, errors.New("object type category set, but category data not found")
 		}
 
-		result.Type = catalogCategorySchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogCategorySchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeItemVariation:
 		data, ok := d.GetOk(catalogObjectItemVariationData)
 		if !ok {
@@ -425,7 +454,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 		}
 
 		var err error
-		if result.Type, err = catalogItemVariationSchemaToObject(data.([]map[string]interface{})[0]); err != nil {
+		if result.Type, err = catalogItemVariationSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{})); err != nil {
 			return nil, fmt.Errorf("error parsing item variation: %w", err)
 		}
 	case catalogObjectTypeTax:
@@ -434,7 +463,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 			return nil, errors.New("object type tax set, but tax data not found")
 		}
 
-		result.Type = catalogTaxSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogTaxSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeDiscount:
 		data, ok := d.GetOk(catalogObjectDiscountData)
 		if !ok {
@@ -442,7 +471,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 		}
 
 		var err error
-		if result.Type, err = catalogDiscountSchemaToObject(data.([]map[string]interface{})[0]); err != nil {
+		if result.Type, err = catalogDiscountSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{})); err != nil {
 			return nil, fmt.Errorf("error parsing discount: %w", err)
 		}
 	case catalogObjectTypeModifierList:
@@ -451,21 +480,21 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 			return nil, errors.New("object type modifier list set, but modifier list data not found")
 		}
 
-		result.Type = catalogModifierListSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogModifierListSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeModifier:
 		data, ok := d.GetOk(catalogObjectModifierData)
 		if !ok {
 			return nil, errors.New("object type modifier set, but modifier data not found")
 		}
 
-		result.Type = catalogModifierSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogModifierSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeTimePeriod:
 		data, ok := d.GetOk(catalogObjectTimePeriodData)
 		if !ok {
 			return nil, errors.New("object type time period set, but time period data not found")
 		}
 
-		result.Type = catalogTimePeriodSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogTimePeriodSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeProductSet:
 		data, ok := d.GetOk(catalogObjectProductSetData)
 		if !ok {
@@ -473,7 +502,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 		}
 
 		var err error
-		if result.Type, err = catalogProductSetSchemaToObject(data.([]map[string]interface{})[0]); err != nil {
+		if result.Type, err = catalogProductSetSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{})); err != nil {
 			return nil, fmt.Errorf("error parsing product set: %w", err)
 		}
 	case catalogObjectTypePricingRule:
@@ -483,7 +512,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 		}
 
 		var err error
-		if result.Type, err = catalogPricingRuleSchemaToObject(data.([]map[string]interface{})[0]); err != nil {
+		if result.Type, err = catalogPricingRuleSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{})); err != nil {
 			return nil, fmt.Errorf("error parsing pricing rule set: %w", err)
 		}
 	case catalogObjectTypeImage:
@@ -492,7 +521,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 			return nil, errors.New("object type image set, but image data not found")
 		}
 
-		result.Type = catalogImageSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogImageSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeMeasurementUnit:
 		data, ok := d.GetOk(catalogObjectMeasurementUnitData)
 		if !ok {
@@ -500,7 +529,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 		}
 
 		var err error
-		if result.Type, err = catalogMeasurementUnitSchemaToObject(data.([]map[string]interface{})[0]); err != nil {
+		if result.Type, err = catalogMeasurementUnitSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{})); err != nil {
 			return nil, fmt.Errorf("error parsing pricing rule set: %w", err)
 		}
 	case catalogObjectTypeSubscriptionPlan:
@@ -509,21 +538,21 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 			return nil, errors.New("object type subscription plan set, but subscription plan data not found")
 		}
 
-		result.Type = catalogSubscriptionPlanSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogSubscriptionPlanSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeItemOption:
 		data, ok := d.GetOk(catalogObjectItemOptionData)
 		if !ok {
 			return nil, errors.New("object type item option set, but item option data not found")
 		}
 
-		result.Type = catalogItemOptionSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogItemOptionSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeItemOptionVal:
 		data, ok := d.GetOk(catalogObjectItemOptionValueData)
 		if !ok {
 			return nil, errors.New("object type item option value set, but item option value data not found")
 		}
 
-		result.Type = catalogItemOptionValueSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogItemOptionValueSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	case catalogObjectTypeCustomAttributeDefinition:
 		data, ok := d.GetOk(catalogObjectCustomAttributeDefinitionData)
 		if !ok {
@@ -531,7 +560,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 		}
 
 		var err error
-		if result.Type, err = catalogCustomAttributeDefinitionSchemaToObject(data.([]map[string]interface{})[0]); err != nil {
+		if result.Type, err = catalogCustomAttributeDefinitionSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{})); err != nil {
 			return nil, fmt.Errorf("error parsing custom attribute definition: %w", err)
 		}
 	case catalogObjectTypeQuickAmountsSettings:
@@ -540,7 +569,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 			return nil, errors.New("object type quick amounts settings set, but quick amounts settings data not found")
 		}
 
-		result.Type = catalogQuickAmountsSettingsSchemaToObject(data.([]map[string]interface{})[0])
+		result.Type = catalogQuickAmountsSettingsSchemaToObject(data.(*schema.Set).List()[0].(map[string]interface{}))
 	}
 
 	return result, nil
@@ -562,7 +591,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 	}
 
 	if input.CatalogV1IDs != nil {
-		ids := make([]map[string]interface{}, len(input.CatalogV1IDs))
+		ids := make([]interface{}, len(input.CatalogV1IDs))
 		for i, id := range input.CatalogV1IDs {
 			ids[i] = catalogV1IDObjectToSchema(id)
 		}
@@ -573,15 +602,39 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 	}
 
 	if input.PresentAtLocationIDs != nil {
-		if err := d.Set(catalogObjectPresentAtLocationIDs, input.PresentAtLocationIDs); err != nil {
+		ids := make([]interface{}, len(input.PresentAtLocationIDs))
+		for i, id := range input.PresentAtLocationIDs {
+			ids[i] = id
+		}
+
+		if err := d.Set(catalogObjectPresentAtLocationIDs, ids); err != nil {
 			return fmt.Errorf("error setting present at location ids: %w", err)
 		}
 	}
 
 	if input.AbsentAtLocationIDs != nil {
-		if err := d.Set(catalogObjectAbsentAtLocationIDs, input.AbsentAtLocationIDs); err != nil {
+		ids := make([]interface{}, len(input.AbsentAtLocationIDs))
+		for i, id := range input.AbsentAtLocationIDs {
+			ids[i] = id
+		}
+
+		if err := d.Set(catalogObjectAbsentAtLocationIDs, ids); err != nil {
 			return fmt.Errorf("error setting absent at location ids: %w", err)
 		}
+	}
+
+	if input.CustomAttributeValues != nil {
+		values := make([]interface{}, 0, len(input.CustomAttributeValues))
+		for _, value := range input.CustomAttributeValues {
+			parsedValue, err := catalogCustomAttributeValueObjectToSchema(value)
+			if err != nil {
+				return fmt.Errorf("error parsing custom attribute value: %w", err)
+			}
+
+			values = append(values, parsedValue)
+		}
+
+		d.Set(catalogObjectCustomAttributeValues, values)
 	}
 
 	switch t := input.Type.(type) {
@@ -590,7 +643,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectItemData, []map[string]interface{}{catalogItemObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectItemData, []interface{}{catalogItemObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting item data: %w", err)
 		}
 	case *objects.CatalogCategory:
@@ -598,7 +651,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectCategoryData, []map[string]interface{}{catalogCategoryObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectCategoryData, []interface{}{catalogCategoryObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting category data: %w", err)
 		}
 	case *objects.CatalogItemVariation:
@@ -611,7 +664,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error parsing item variation: %w", err)
 		}
 
-		if err := d.Set(catalogObjectItemVariationData, []map[string]interface{}{s}); err != nil {
+		if err := d.Set(catalogObjectItemVariationData, []interface{}{s}); err != nil {
 			return fmt.Errorf("error setting category data: %w", err)
 		}
 	case *objects.CatalogTax:
@@ -619,7 +672,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectTaxData, []map[string]interface{}{catalogTaxObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectTaxData, []interface{}{catalogTaxObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting tax data: %w", err)
 		}
 	case *objects.CatalogDiscount:
@@ -632,7 +685,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error parsing discount: %w", err)
 		}
 
-		if err := d.Set(catalogObjectDiscountData, []map[string]interface{}{s}); err != nil {
+		if err := d.Set(catalogObjectDiscountData, []interface{}{s}); err != nil {
 			return fmt.Errorf("error setting discount data: %w", err)
 		}
 	case *objects.CatalogModifierList:
@@ -640,7 +693,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectModifierListData, []map[string]interface{}{catalogModifierListObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectModifierListData, []interface{}{catalogModifierListObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting modifier list data: %w", err)
 		}
 	case *objects.CatalogModifier:
@@ -648,7 +701,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectModifierData, []map[string]interface{}{catalogModifierObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectModifierData, []interface{}{catalogModifierObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting modifier data: %w", err)
 		}
 	case *objects.CatalogTimePeriod:
@@ -656,7 +709,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectTimePeriodData, []map[string]interface{}{catalogTimePeriodObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectTimePeriodData, []interface{}{catalogTimePeriodObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting time period data: %w", err)
 		}
 	case *objects.CatalogProductSet:
@@ -669,7 +722,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error parsing product set: %w", err)
 		}
 
-		if err := d.Set(catalogObjectProductSetData, []map[string]interface{}{s}); err != nil {
+		if err := d.Set(catalogObjectProductSetData, []interface{}{s}); err != nil {
 			return fmt.Errorf("error setting product set data: %w", err)
 		}
 	case *objects.CatalogPricingRule:
@@ -677,7 +730,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectPricingRuleData, []map[string]interface{}{catalogPricingRuleObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectPricingRuleData, []interface{}{catalogPricingRuleObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting pricing rule data: %w", err)
 		}
 	case *objects.CatalogImage:
@@ -685,7 +738,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectImageData, []map[string]interface{}{catalogImageObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectImageData, []interface{}{catalogImageObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting image data: %w", err)
 		}
 	case *objects.CatalogMeasurementUnit:
@@ -698,7 +751,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error parsing measurement unit: %w", err)
 		}
 
-		if err := d.Set(catalogObjectMeasurementUnitData, []map[string]interface{}{s}); err != nil {
+		if err := d.Set(catalogObjectMeasurementUnitData, []interface{}{s}); err != nil {
 			return fmt.Errorf("error setting measurement unit data: %w", err)
 		}
 	case *objects.CatalogSubscriptionPlan:
@@ -706,7 +759,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectSubscriptionPlanData, []map[string]interface{}{catalogSubscriptionPlanObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectSubscriptionPlanData, []interface{}{catalogSubscriptionPlanObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting subscription plan data: %w", err)
 		}
 	case *objects.CatalogItemOption:
@@ -714,7 +767,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectItemOptionData, []map[string]interface{}{catalogItemOptionObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectItemOptionData, []interface{}{catalogItemOptionObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting item option data: %w", err)
 		}
 	case *objects.CatalogItemOptionValue:
@@ -722,7 +775,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectItemOptionValueData, []map[string]interface{}{catalogItemOptionValueObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectItemOptionValueData, []interface{}{catalogItemOptionValueObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting item option data: %w", err)
 		}
 	case *objects.CatalogCustomAttributeDefinition:
@@ -735,7 +788,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error parsing custom attribute definition: %w", err)
 		}
 
-		if err := d.Set(catalogObjectCustomAttributeDefinitionData, []map[string]interface{}{s}); err != nil {
+		if err := d.Set(catalogObjectCustomAttributeDefinitionData, []interface{}{s}); err != nil {
 			return fmt.Errorf("error setting custom attribute definition data: %w", err)
 		}
 
@@ -744,7 +797,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			return fmt.Errorf("error setting catalog object type: %w", err)
 		}
 
-		if err := d.Set(catalogObjectQuickAmountsSettingsData, []map[string]interface{}{catalogQuickAmountsSettingsObjectToSchema(t)}); err != nil {
+		if err := d.Set(catalogObjectQuickAmountsSettingsData, []interface{}{catalogQuickAmountsSettingsObjectToSchema(t)}); err != nil {
 			return fmt.Errorf("error setting quick amounts settings data: %w", err)
 		}
 	}

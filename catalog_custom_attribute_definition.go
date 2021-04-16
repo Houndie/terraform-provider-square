@@ -17,28 +17,22 @@ var catalogCustomAttributeDefinitionNumberConfigSchema = &schema.Resource{
 		catalogCustomAttributeDefinitionNumberConfigPrecision: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
+			Default:  5,
 		},
 	},
 }
 
 func catalogCustomAttributeDefinitionNumberConfigSchemaToObject(input map[string]interface{}) *objects.CatalogCustomAttributeDefinitionNumberConfig {
-	result := &objects.CatalogCustomAttributeDefinitionNumberConfig{}
-	if precision, ok := input[catalogCustomAttributeDefinitionNumberConfigPrecision]; ok {
-		precisionInt := precision.(int)
-		result.Precision = &precisionInt
+	precision := input[catalogCustomAttributeDefinitionNumberConfigPrecision].(int)
+	return &objects.CatalogCustomAttributeDefinitionNumberConfig{
+		Precision: &precision,
 	}
-
-	return result
 }
 
 func catalogCustomAttributeDefinitionNumberConfigObjectToSchema(input *objects.CatalogCustomAttributeDefinitionNumberConfig) map[string]interface{} {
-	result := map[string]interface{}{}
-
-	if input.Precision != nil {
-		result[catalogCustomAttributeDefinitionNumberConfigPrecision] = *input.Precision
+	return map[string]interface{}{
+		catalogCustomAttributeDefinitionNumberConfigPrecision: *input.Precision,
 	}
-
-	return result
 }
 
 const (
@@ -60,15 +54,10 @@ var catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionSchem
 }
 
 func catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionSchemaToObject(input map[string]interface{}) *objects.CatalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelection {
-	result := &objects.CatalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelection{
+	return &objects.CatalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelection{
 		Name: input[catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionName].(string),
+		UID:  input[catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionUID].(string),
 	}
-
-	if uid, ok := input[catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionUID]; ok {
-		result.UID = uid.(string)
-	}
-
-	return result
 }
 
 func catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionObjectToSchema(input *objects.CatalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelection) map[string]interface{} {
@@ -93,44 +82,39 @@ var catalogCustomAttributeDefinitionSelectionConfigSchema = &schema.Resource{
 		catalogCustomAttributeDefinitionSelectionConfigMaxAllowedSelections: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
+			Default:  1,
 		},
 	},
 }
 
 func catalogCustomAttributeDefinitionSelectionConfigSchemaToObject(input map[string]interface{}) *objects.CatalogCustomAttributeDefinitionSelectionConfig {
-	result := &objects.CatalogCustomAttributeDefinitionSelectionConfig{}
-
-	if selections, ok := input[catalogCustomAttributeDefinitionSelectionConfigAllowedSelections]; ok {
-		selectionsList := selections.([]map[string]interface{})
-		result.AllowedSelections = make([]*objects.CatalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelection, len(selectionsList))
-
-		for i, selection := range selectionsList {
-			result.AllowedSelections[i] = catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionSchemaToObject(selection)
-		}
+	maxInt := input[catalogCustomAttributeDefinitionSelectionConfigMaxAllowedSelections].(int)
+	result := &objects.CatalogCustomAttributeDefinitionSelectionConfig{
+		MaxAllowedSelections: &maxInt,
 	}
 
-	if max, ok := input[catalogCustomAttributeDefinitionSelectionConfigMaxAllowedSelections]; ok {
-		maxInt := max.(int)
-		result.MaxAllowedSelections = &maxInt
+	if selections := input[catalogCustomAttributeDefinitionSelectionConfigAllowedSelections].([]interface{}); len(selections) > 0 {
+		result.AllowedSelections = make([]*objects.CatalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelection, len(selections))
+		for i, selection := range selections {
+			result.AllowedSelections[i] = catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionSchemaToObject(selection.(map[string]interface{}))
+		}
 	}
 
 	return result
 }
 
 func catalogCustomAttributeDefinitionSelectionConfigObjectToSchema(input *objects.CatalogCustomAttributeDefinitionSelectionConfig) map[string]interface{} {
-	result := map[string]interface{}{}
+	result := map[string]interface{}{
+		catalogCustomAttributeDefinitionSelectionConfigMaxAllowedSelections: *input.MaxAllowedSelections,
+	}
 
 	if input.AllowedSelections != nil {
-		selectionsList := make([]map[string]interface{}, len(input.AllowedSelections))
+		selectionsList := make([]interface{}, len(input.AllowedSelections))
 		for i, selection := range input.AllowedSelections {
 			selectionsList[i] = catalogCustomAttributeDefinitionSelectionConfigCustomAttributeSelectionObjectToSchema(selection)
 		}
 
 		result[catalogCustomAttributeDefinitionSelectionConfigAllowedSelections] = selectionsList
-	}
-
-	if input.MaxAllowedSelections != nil {
-		result[catalogCustomAttributeDefinitionSelectionConfigMaxAllowedSelections] = *input.MaxAllowedSelections
 	}
 
 	return result
@@ -143,7 +127,6 @@ var catalogCustomAttributeDefinitionStringConfigSchema = &schema.Resource{
 		catalogCustomAttributeDefinitionStringConfigEnforceUniqueness: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 	},
 }
@@ -243,23 +226,19 @@ var catalogCustomAttributeDefinitionSchema = &schema.Resource{
 		catalogCustomAttributeDefinitionAppVisibility: &schema.Schema{
 			Type:             schema.TypeString,
 			Optional:         true,
-			Default:          "",
 			ValidateDiagFunc: catalogCustomAttributeDefinitionAppVisibilityValidate,
 		},
 		catalogCustomAttributeDefinitionDescription: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogCustomAttributeDefinitionKey: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogCustomAttributeDefinitionSellerVisibility: &schema.Schema{
 			Type:             schema.TypeString,
 			Optional:         true,
-			Default:          "",
 			ValidateDiagFunc: catalogCustomAttributeDefinitionSellerVisibilityValidate,
 		},
 		catalogCustomAttributeDefinitionType: &schema.Schema{
@@ -301,31 +280,31 @@ func catalogCustomAttributeDefinitionSchemaToObject(input map[string]interface{}
 	case catalogCustomAttributeDefinitionTypeBoolean:
 		result.Type = &objects.CatalogCustomAttributeDefinitionTypeBoolean{}
 	case catalogCustomAttributeDefinitionTypeString:
-		config, ok := input[catalogCustomAttributeDefinitionStringConfig]
-		if !ok {
+		config := input[catalogCustomAttributeDefinitionStringConfig].(*schema.Set).List()
+		if len(config) < 1 {
 			return nil, errors.New("string attribute definition set without string config provided")
 		}
 
 		result.Type = &objects.CatalogCustomAttributeDefinitionTypeString{
-			Config: catalogCustomAttributeDefinitionStringConfigSchemaToObject(config.([]map[string]interface{})[0]),
+			Config: catalogCustomAttributeDefinitionStringConfigSchemaToObject(config[0].(map[string]interface{})),
 		}
 	case catalogCustomAttributeDefinitionTypeNumber:
-		config, ok := input[catalogCustomAttributeDefinitionNumberConfig]
-		if !ok {
+		config := input[catalogCustomAttributeDefinitionNumberConfig].(*schema.Set).List()
+		if len(config) < 1 {
 			return nil, errors.New("number attribute definition set without number config provided")
 		}
 
 		result.Type = &objects.CatalogCustomAttributeDefinitionTypeNumber{
-			Config: catalogCustomAttributeDefinitionNumberConfigSchemaToObject(config.([]map[string]interface{})[0]),
+			Config: catalogCustomAttributeDefinitionNumberConfigSchemaToObject(config[0].(map[string]interface{})),
 		}
 	case catalogCustomAttributeDefinitionTypeSelection:
-		config, ok := input[catalogCustomAttributeDefinitionSelectionConfig]
-		if !ok {
+		config := input[catalogCustomAttributeDefinitionSelectionConfig].(*schema.Set).List()
+		if len(config) < 1 {
 			return nil, errors.New("selection attribute definition set without selection config provided")
 		}
 
 		result.Type = &objects.CatalogCustomAttributeDefinitionTypeSelection{
-			Config: catalogCustomAttributeDefinitionSelectionConfigSchemaToObject(config.([]map[string]interface{})[0]),
+			Config: catalogCustomAttributeDefinitionSelectionConfigSchemaToObject(config[0].(map[string]interface{})),
 		}
 	default:
 		return nil, fmt.Errorf("unknown type provided: %s", input[catalogCustomAttributeDefinitionType].(string))
@@ -348,13 +327,13 @@ func catalogCustomAttributeDefinitionObjectToSchema(input *objects.CatalogCustom
 		result[catalogCustomAttributeDefinitionType] = catalogCustomAttributeDefinitionTypeBoolean
 	case *objects.CatalogCustomAttributeDefinitionTypeString:
 		result[catalogCustomAttributeDefinitionType] = catalogCustomAttributeDefinitionTypeString
-		result[catalogCustomAttributeDefinitionStringConfig] = catalogCustomAttributeDefinitionStringConfigObjectToSchema(t.Config)
+		result[catalogCustomAttributeDefinitionStringConfig] = schema.NewSet(schema.HashResource(catalogCustomAttributeDefinitionStringConfigSchema), []interface{}{catalogCustomAttributeDefinitionStringConfigObjectToSchema(t.Config)})
 	case *objects.CatalogCustomAttributeDefinitionTypeNumber:
 		result[catalogCustomAttributeDefinitionType] = catalogCustomAttributeDefinitionTypeNumber
-		result[catalogCustomAttributeDefinitionNumberConfig] = catalogCustomAttributeDefinitionNumberConfigObjectToSchema(t.Config)
+		result[catalogCustomAttributeDefinitionNumberConfig] = schema.NewSet(schema.HashResource(catalogCustomAttributeDefinitionNumberConfigSchema), []interface{}{catalogCustomAttributeDefinitionNumberConfigObjectToSchema(t.Config)})
 	case *objects.CatalogCustomAttributeDefinitionTypeSelection:
 		result[catalogCustomAttributeDefinitionType] = catalogCustomAttributeDefinitionTypeSelection
-		result[catalogCustomAttributeDefinitionSelectionConfig] = catalogCustomAttributeDefinitionSelectionConfigObjectToSchema(t.Config)
+		result[catalogCustomAttributeDefinitionSelectionConfig] = schema.NewSet(schema.HashResource(catalogCustomAttributeDefinitionSelectionConfigSchema), []interface{}{catalogCustomAttributeDefinitionSelectionConfigObjectToSchema(t.Config)})
 	default:
 		return nil, errors.New("unknown definition type found")
 	}

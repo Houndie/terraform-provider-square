@@ -27,7 +27,6 @@ var catalogModifierSchema = &schema.Resource{
 		catalogModifierOrdinal: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 		catalogModifierModifierListID: &schema.Schema{
 			Type:     schema.TypeString,
@@ -39,7 +38,7 @@ var catalogModifierSchema = &schema.Resource{
 func catalogModifierSchemaToObject(input map[string]interface{}) *objects.CatalogModifier {
 	return &objects.CatalogModifier{
 		Name:           input[catalogModifierName].(string),
-		PriceMoney:     moneySchemaToObject(input[catalogModifierPriceMoney].([]map[string]interface{})[0]),
+		PriceMoney:     moneySchemaToObject(input[catalogModifierPriceMoney].(*schema.Set).List()[0].(map[string]interface{})),
 		Ordinal:        input[catalogModifierOrdinal].(int),
 		ModifierListID: input[catalogModifierModifierListID].(string),
 	}
@@ -48,7 +47,7 @@ func catalogModifierSchemaToObject(input map[string]interface{}) *objects.Catalo
 func catalogModifierObjectToSchema(input *objects.CatalogModifier) map[string]interface{} {
 	return map[string]interface{}{
 		catalogModifierName:           input.Name,
-		catalogModifierPriceMoney:     []map[string]interface{}{moneyObjectToSchema(input.PriceMoney)},
+		catalogModifierPriceMoney:     schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.PriceMoney)}),
 		catalogModifierOrdinal:        input.Ordinal,
 		catalogModifierModifierListID: input.ModifierListID,
 	}

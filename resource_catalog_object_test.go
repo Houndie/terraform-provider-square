@@ -24,8 +24,8 @@ func upsertConfig(token string) string {
 resource "catalog_object" "test_object" {
 	provider = "test-provider"
 	type = "ITEM"
-	item_data = {
-		name = my-item
+	item_data {
+		name = "my-item"
 	}
 }`
 }

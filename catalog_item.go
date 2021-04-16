@@ -56,37 +56,30 @@ var catalogItemSchema = &schema.Resource{
 		catalogItemDescription: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemAbbreviation: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemLabelColor: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemAvailableOnline: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogItemAvailableForPickup: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogItemAvailableElectronically: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogItemCategoryID: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemTaxIDs: &schema.Schema{
 			Type:     schema.TypeList,
@@ -107,7 +100,6 @@ var catalogItemSchema = &schema.Resource{
 		catalogItemSkipModifierScreen: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogItemItemOptions: &schema.Schema{
 			Type:     schema.TypeList,
@@ -154,25 +146,24 @@ func catalogItemSchemaToObject(input map[string]interface{}) *objects.CatalogIte
 		ProductType:             catalogItemProductTypeStrToEnum[input[catalogItemProductType].(string)],
 	}
 
-	if taxIDs, ok := input[catalogItemTaxIDs]; ok {
-		result.TaxIDs = taxIDs.([]string)
-	}
-
-	if modifierListInfo, ok := input[catalogItemModifierListInfo]; ok {
-		modifierListInfoType := modifierListInfo.([]map[string]interface{})
-		result.ModifierListInfo = make([]*objects.CatalogItemModifierListInfo, len(modifierListInfoType))
-
-		for i, info := range modifierListInfoType {
-			result.ModifierListInfo[i] = catalogItemModifierListInfoSchemaToObject(info)
+	if idList := input[catalogItemTaxIDs].([]interface{}); len(idList) > 0 {
+		result.TaxIDs = make([]string, len(idList))
+		for i, id := range idList {
+			result.TaxIDs[i] = id.(string)
 		}
 	}
 
-	if options, ok := input[catalogItemItemOptions]; ok {
-		optionsType := options.([]map[string]interface{})
-		result.ItemOptions = make([]*objects.CatalogItemOptionForItem, len(optionsType))
+	if modifierListInfo := input[catalogItemModifierListInfo].([]interface{}); len(modifierListInfo) > 0 {
+		result.ModifierListInfo = make([]*objects.CatalogItemModifierListInfo, len(modifierListInfo))
+		for i, info := range modifierListInfo {
+			result.ModifierListInfo[i] = catalogItemModifierListInfoSchemaToObject(info.(map[string]interface{}))
+		}
+	}
 
-		for i, option := range optionsType {
-			result.ItemOptions[i] = catalogItemOptionForItemSchemaToObject(option)
+	if options := input[catalogItemItemOptions].([]interface{}); len(options) > 0 {
+		result.ItemOptions = make([]*objects.CatalogItemOptionForItem, len(options))
+		for i, option := range options {
+			result.ItemOptions[i] = catalogItemOptionForItemSchemaToObject(option.(map[string]interface{}))
 		}
 	}
 
@@ -198,7 +189,7 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) map[string]interface{
 	}
 
 	if input.ModifierListInfo != nil {
-		resultModifierListInfo := make([]map[string]interface{}, len(input.ModifierListInfo))
+		resultModifierListInfo := make([]interface{}, len(input.ModifierListInfo))
 		for i, info := range input.ModifierListInfo {
 			resultModifierListInfo[i] = catalogItemModifierListInfoObjectToSchema(info)
 		}
@@ -207,7 +198,7 @@ func catalogItemObjectToSchema(input *objects.CatalogItem) map[string]interface{
 	}
 
 	if input.ItemOptions != nil {
-		resultOptions := make([]map[string]interface{}, len(input.ItemOptions))
+		resultOptions := make([]interface{}, len(input.ItemOptions))
 		for i, o := range input.ItemOptions {
 			resultOptions[i] = catalogItemOptionForItemObjectToSchema(o)
 		}

@@ -19,7 +19,6 @@ var catalogV1IDSchema = &schema.Resource{
 		catalogV1IDLocationID: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 	},
 }

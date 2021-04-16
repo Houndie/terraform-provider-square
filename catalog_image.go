@@ -24,7 +24,6 @@ var catalogImageSchema = &schema.Resource{
 		catalogImageCaption: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 	},
 }

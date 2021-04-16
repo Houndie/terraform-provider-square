@@ -15,7 +15,7 @@ const (
 	catalogPricingRuleMatchProductsID     = "match_products_id"
 	catalogPricingRuleName                = "name"
 	catalogPricingRuleTimePeriodIDs       = "time_period_ids"
-	catalogPricingRuleValidFromDate       = "valid_from_date,"
+	catalogPricingRuleValidFromDate       = "valid_from_date"
 	catalogPricingRuleValidFromLocalTime  = "valid_from_local_time"
 	catalogPricingRuleValidUntilDate      = "valid_until_date"
 	catalogPricingRuleValidUntilLocalTime = "valid_until_local_time"
@@ -47,7 +47,6 @@ var catalogPricingRuleSchema = &schema.Resource{
 		catalogPricingRuleExcludeProductsID: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogPricingRuleExcludeStrategy: &schema.Schema{
 			Type:             schema.TypeString,
@@ -75,7 +74,6 @@ var catalogPricingRuleSchema = &schema.Resource{
 		catalogPricingRuleValidFromLocalTime: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogPricingRuleValidUntilDate: &schema.Schema{
 			Type:     schema.TypeString,
@@ -84,7 +82,6 @@ var catalogPricingRuleSchema = &schema.Resource{
 		catalogPricingRuleValidUntilLocalTime: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 	},
 }
@@ -100,12 +97,15 @@ func catalogPricingRuleSchemaToObject(input map[string]interface{}) (*objects.Ca
 		ValidUntilLocalTime: input[catalogPricingRuleValidUntilLocalTime].(string),
 	}
 
-	if ids, ok := input[catalogPricingRuleTimePeriodIDs]; ok {
-		result.TimePeriodIDs = ids.([]string)
+	if ids := input[catalogPricingRuleTimePeriodIDs].([]interface{}); len(ids) > 0 {
+		result.TimePeriodIDs = make([]string, len(ids))
+		for i, id := range ids {
+			result.TimePeriodIDs[i] = id.(string)
+		}
 	}
 
-	if date, ok := input[catalogPricingRuleValidFromDate]; ok {
-		t, err := time.Parse(time.RFC3339, date.(string))
+	if date := input[catalogPricingRuleValidFromDate].(string); date == "" {
+		t, err := time.Parse(time.RFC3339, date)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing valid from date: %w", err)
 		}
@@ -113,8 +113,8 @@ func catalogPricingRuleSchemaToObject(input map[string]interface{}) (*objects.Ca
 		result.ValidFromDate = &t
 	}
 
-	if date, ok := input[catalogPricingRuleValidUntilDate]; ok {
-		t, err := time.Parse(time.RFC3339, date.(string))
+	if date := input[catalogPricingRuleValidUntilDate].(string); date == "" {
+		t, err := time.Parse(time.RFC3339, date)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing valid until date: %w", err)
 		}
@@ -137,7 +137,11 @@ func catalogPricingRuleObjectToSchema(input *objects.CatalogPricingRule) map[str
 	}
 
 	if input.TimePeriodIDs != nil {
-		result[catalogPricingRuleTimePeriodIDs] = input.TimePeriodIDs
+		ids := make([]interface{}, len(input.TimePeriodIDs))
+		for i, id := range input.TimePeriodIDs {
+			ids[i] = id
+		}
+		result[catalogPricingRuleTimePeriodIDs] = ids
 	}
 
 	if input.ValidFromDate != nil {

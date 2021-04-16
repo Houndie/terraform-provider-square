@@ -18,12 +18,10 @@ var catalogItemOptionValueSchema = &schema.Resource{
 		catalogItemOptionValueColor: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemOptionValueDescription: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogItemOptionValueItemOptionID: &schema.Schema{
 			Type:     schema.TypeString,
@@ -36,7 +34,6 @@ var catalogItemOptionValueSchema = &schema.Resource{
 		catalogItemOptionValueOrdinal: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 	},
 }

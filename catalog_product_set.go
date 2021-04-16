@@ -22,7 +22,6 @@ var catalogProductSetSchema = &schema.Resource{
 		catalogProductSetAllProducts: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogProductSetName: &schema.Schema{
 			Type:     schema.TypeString,
@@ -41,17 +40,14 @@ var catalogProductSetSchema = &schema.Resource{
 		catalogProductSetQuantityExact: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 		catalogProductSetQuantityMax: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 		catalogProductSetQuantityMin: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  0,
 		},
 	},
 }
@@ -63,13 +59,21 @@ func catalogProductSetSchemaToObject(input map[string]interface{}) (*objects.Cat
 
 	if input[catalogProductSetAllProducts].(bool) {
 		result.Products = &objects.CatalogProductSetAllProducts{}
-	} else if products, ok := input[catalogProductSetProductIDsAll]; ok {
-		result.Products = &objects.CatalogProductSetAllIDs{
-			IDs: products.([]string),
+	} else if products := input[catalogProductSetProductIDsAll].([]interface{}); len(products) > 0 {
+		ids := make([]string, len(products))
+		for i, id := range products {
+			ids[i] = id.(string)
 		}
-	} else if products, ok := input[catalogProductSetProductIDsAny]; ok {
+		result.Products = &objects.CatalogProductSetAllIDs{
+			IDs: ids,
+		}
+	} else if products := input[catalogProductSetProductIDsAny].([]interface{}); len(products) > 0 {
+		ids := make([]string, len(products))
+		for i, id := range products {
+			ids[i] = id.(string)
+		}
 		result.Products = &objects.CatalogProductSetAnyIDs{
-			IDs: products.([]string),
+			IDs: ids,
 		}
 	} else {
 		return nil, errors.New("one of all products, product ids all, or product ids any must be set")
@@ -100,9 +104,19 @@ func catalogProductSetObjectToSchema(input *objects.CatalogProductSet) (map[stri
 	case *objects.CatalogProductSetAllProducts:
 		result[catalogProductSetAllProducts] = true
 	case *objects.CatalogProductSetAllIDs:
-		result[catalogProductSetProductIDsAll] = t.IDs
+		ids := make([]interface{}, len(t.IDs))
+		for i, id := range t.IDs {
+			ids[i] = id
+		}
+
+		result[catalogProductSetProductIDsAll] = ids
 	case *objects.CatalogProductSetAnyIDs:
-		result[catalogProductSetProductIDsAny] = t.IDs
+		ids := make([]interface{}, len(t.IDs))
+		for i, id := range t.IDs {
+			ids[i] = id
+		}
+
+		result[catalogProductSetProductIDsAny] = ids
 	default:
 		return nil, errors.New("unknown product selection found")
 	}

@@ -30,15 +30,10 @@ var catalogModifierOverrideSchema = &schema.Resource{
 }
 
 func catalogModifierOverrideSchemaToObject(input map[string]interface{}) *objects.CatalogModifierOverride {
-	result := &objects.CatalogModifierOverride{
-		ModifierID: input[catalogModifierOverrideModifierID].(string),
+	return &objects.CatalogModifierOverride{
+		ModifierID:  input[catalogModifierOverrideModifierID].(string),
+		OnByDefault: input[catalogModifierOverrideOnByDefault].(bool),
 	}
-
-	if onByDefault, ok := input[catalogModifierOverrideOnByDefault]; ok {
-		result.OnByDefault = onByDefault.(bool)
-	}
-
-	return result
 }
 
 func catalogModifierOverrideObjectToSchema(input *objects.CatalogModifierOverride) map[string]interface{} {
@@ -77,30 +72,21 @@ var catalogItemModifierListInfoSchema = &schema.Resource{
 
 func catalogItemModifierListInfoSchemaToObject(input map[string]interface{}) *objects.CatalogItemModifierListInfo {
 	result := &objects.CatalogItemModifierListInfo{
-		ModifierListID: input[catalogItemModifierListInfoModifierListID].(string),
+		ModifierListID:       input[catalogItemModifierListInfoModifierListID].(string),
+		MinSelectedModifiers: input[catalogItemModifierListInfoMinSelectedModifiers].(int),
+		MaxSelectedModifiers: input[catalogItemModifierListInfoMaxSelectedModifiers].(int),
 	}
 
-	if overrides, ok := input[catalogItemModifierListInfoModifierOverrides]; ok {
-		overridesType := overrides.([]map[string]interface{})
-		result.ModifierOverrides = make([]*objects.CatalogModifierOverride, len(overridesType))
+	if overrides := input[catalogItemModifierListInfoModifierOverrides].([]interface{}); len(overrides) > 0 {
+		result.ModifierOverrides = make([]*objects.CatalogModifierOverride, len(overrides))
 
-		for i, override := range overridesType {
-			result.ModifierOverrides[i] = catalogModifierOverrideSchemaToObject(override)
+		for i, override := range overrides {
+			result.ModifierOverrides[i] = catalogModifierOverrideSchemaToObject(override.(map[string]interface{}))
 		}
 	}
 
-	if mins, ok := input[catalogItemModifierListInfoMinSelectedModifiers]; ok {
-		result.MinSelectedModifiers = mins.(int)
-	}
-
-	if maxes, ok := input[catalogItemModifierListInfoMaxSelectedModifiers]; ok {
-		result.MaxSelectedModifiers = maxes.(int)
-	}
-
-	if enabled, ok := input[catalogItemModifierListInfoEnabled]; ok {
-		enabledType := enabled.(bool)
-		result.Enabled = &enabledType
-	}
+	enabledType := input[catalogItemModifierListInfoEnabled].(bool)
+	result.Enabled = &enabledType
 
 	return result
 }
@@ -113,7 +99,7 @@ func catalogItemModifierListInfoObjectToSchema(input *objects.CatalogItemModifie
 	}
 
 	if input.ModifierOverrides != nil {
-		overrides := make([]map[string]interface{}, len(input.ModifierOverrides))
+		overrides := make([]interface{}, len(input.ModifierOverrides))
 		for i, override := range input.ModifierOverrides {
 			overrides[i] = catalogModifierOverrideObjectToSchema(override)
 		}

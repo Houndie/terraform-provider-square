@@ -110,7 +110,7 @@ var subscriptionPhaseSchema = &schema.Resource{
 func subscriptionPhaseSchemaToObject(input map[string]interface{}) *objects.SubscriptionPhase {
 	return &objects.SubscriptionPhase{
 		Cadence:             subscriptionCadenceStrToEnum[input[subscriptionPhaseCadence].(string)],
-		RecurringPriceMoney: moneySchemaToObject(input[subscriptionPhaseRecurringPriceMoney].([]map[string]interface{})[0]),
+		RecurringPriceMoney: moneySchemaToObject(input[subscriptionPhaseRecurringPriceMoney].(*schema.Set).List()[0].(map[string]interface{})),
 		Ordinal:             input[subscriptionPhaseOrdinal].(int),
 		Periods:             input[subscriptionPhasePeriods].(int),
 		UID:                 input[subscriptionPhaseUID].(string),
@@ -120,7 +120,7 @@ func subscriptionPhaseSchemaToObject(input map[string]interface{}) *objects.Subs
 func subscriptionPhaseObjectToSchema(input *objects.SubscriptionPhase) map[string]interface{} {
 	return map[string]interface{}{
 		subscriptionPhaseCadence:             subscriptionCadenceEnumToStr[input.Cadence],
-		subscriptionPhaseRecurringPriceMoney: []map[string]interface{}{moneyObjectToSchema(input.RecurringPriceMoney)},
+		subscriptionPhaseRecurringPriceMoney: schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.RecurringPriceMoney)}),
 		subscriptionPhaseOrdinal:             input.Ordinal,
 		subscriptionPhasePeriods:             input.Periods,
 		subscriptionPhaseUID:                 input.UID,

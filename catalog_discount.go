@@ -32,17 +32,14 @@ var catalogDiscountSchema = &schema.Resource{
 		catalogDiscountPinRequired: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogDiscountLabelColor: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogDiscountModifyTaxBasis: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogDiscountDiscountType: &schema.Schema{
 			Type:     schema.TypeString,
@@ -51,7 +48,6 @@ var catalogDiscountSchema = &schema.Resource{
 		catalogDiscountPercentage: &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-			Default:  "",
 		},
 		catalogDiscountAmountMoney: &schema.Schema{
 			Type:     schema.TypeSet,
@@ -70,33 +66,34 @@ func catalogDiscountSchemaToObject(input map[string]interface{}) (*objects.Catal
 		ModifyTaxBasis: input[catalogDiscountModifyTaxBasis].(string),
 	}
 
-	switch input[catalogDiscountDiscountType] {
+	switch input[catalogDiscountDiscountType].(string) {
 	case catalogDiscountTypeFixedPercentage:
-		percentage, ok := input[catalogDiscountPercentage]
-		if !ok {
+		percentage := input[catalogDiscountPercentage].(string)
+		if percentage == "" {
 			return nil, errors.New("fixed percentage chosen, but percentage field empty")
 		}
-		result.DiscountType = &objects.CatalogDiscountFixedPercentage{Percentage: percentage.(string)}
+
+		result.DiscountType = &objects.CatalogDiscountFixedPercentage{Percentage: percentage}
 	case catalogDiscountTypeVariablePercentage:
-		percentage, ok := input[catalogDiscountPercentage]
-		if !ok {
+		percentage := input[catalogDiscountPercentage].(string)
+		if percentage == "" {
 			return nil, errors.New("variable percentage chosen, but percentage field empty")
 		}
-		result.DiscountType = &objects.CatalogDiscountVariablePercentage{Percentage: percentage.(string)}
+		result.DiscountType = &objects.CatalogDiscountVariablePercentage{Percentage: percentage}
 	case catalogDiscountTypeFixedAmount:
-		amount, ok := input[catalogDiscountAmountMoney]
-		if !ok {
+		amount := input[catalogDiscountAmountMoney].(*schema.Set).List()
+		if len(amount) == 0 {
 			return nil, errors.New("fixed amount chosen, but amount field empty")
 		}
-		result.DiscountType = &objects.CatalogDiscountFixedAmount{AmountMoney: moneySchemaToObject(amount.(map[string]interface{}))}
+		result.DiscountType = &objects.CatalogDiscountFixedAmount{AmountMoney: moneySchemaToObject(amount[0].(map[string]interface{}))}
 	case catalogDiscountTypeVariableAmount:
-		amount, ok := input[catalogDiscountAmountMoney]
-		if !ok {
+		amount := input[catalogDiscountAmountMoney].(*schema.Set).List()
+		if len(amount) == 0 {
 			return nil, errors.New("variable amount chosen, but amount field empty")
 		}
-		result.DiscountType = &objects.CatalogDiscountVariableAmount{AmountMoney: moneySchemaToObject(amount.(map[string]interface{}))}
+		result.DiscountType = &objects.CatalogDiscountVariableAmount{AmountMoney: moneySchemaToObject(amount[0].(map[string]interface{}))}
 	default:
-		return nil, fmt.Errorf("unknown discount type: %s", input[catalogDiscountDiscountType])
+		return nil, fmt.Errorf("unknown discount type: %s", input[catalogDiscountDiscountType].(string))
 	}
 
 	return result, nil
@@ -119,10 +116,10 @@ func catalogDiscountObjectToSchema(input *objects.CatalogDiscount) (map[string]i
 		result[catalogDiscountPercentage] = t.Percentage
 	case *objects.CatalogDiscountFixedAmount:
 		result[catalogDiscountDiscountType] = catalogDiscountTypeFixedAmount
-		result[catalogDiscountAmountMoney] = t.AmountMoney
+		result[catalogDiscountAmountMoney] = schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(t.AmountMoney)})
 	case *objects.CatalogDiscountVariableAmount:
 		result[catalogDiscountDiscountType] = catalogDiscountTypeVariableAmount
-		result[catalogDiscountAmountMoney] = t.AmountMoney
+		result[catalogDiscountAmountMoney] = schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(t.AmountMoney)})
 	default:
 		return nil, fmt.Errorf("unknown discount type: %s", input.DiscountType)
 	}

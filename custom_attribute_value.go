@@ -11,6 +11,7 @@ import (
 const (
 	catalogCustomAttributeValueCustomAttributeDefinitionID = "custom_attribute_definition_id"
 	catalogCustomAttributeValueKey                         = "key"
+	catalogCustomAttributeValueType                        = "type"
 	catalogCustomAttributeValueName                        = "name"
 	catalogCustomAttributeValueBooleanValue                = "boolean_value"
 	catalogCustomAttributeValueNumberValue                 = "number_value"
@@ -34,20 +35,25 @@ var catalogCustomAttributeValueSchema = &schema.Resource{
 		},
 		catalogCustomAttributeValueBooleanValue: &schema.Schema{
 			Type:     schema.TypeBool,
-			Required: false,
+			Optional: true,
 		},
 		catalogCustomAttributeValueNumberValue: &schema.Schema{
 			Type:     schema.TypeString,
-			Required: false,
+			Optional: true,
 		},
 		catalogCustomAttributeValueSelectionUIDValues: &schema.Schema{
 			Type:     schema.TypeList,
-			Required: false,
-			Elem:     schema.TypeString,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
 		},
 		catalogCustomAttributeValueStringValue: &schema.Schema{
 			Type:     schema.TypeString,
-			Required: false,
+			Optional: true,
+		},
+		catalogCustomAttributeValueType: &schema.Schema{
+			Type:             schema.TypeString,
+			Required:         true,
+			ValidateDiagFunc: catalogCustomAttributeDefinitionTypeValidate,
 		},
 	},
 }
@@ -62,12 +68,16 @@ func catalogCustomAttributeValueObjectToSchema(input *objects.CatalogCustomAttri
 	switch t := input.Type.(type) {
 	case objects.CatalogCustomAttributeValueBoolean:
 		result[catalogCustomAttributeValueBooleanValue] = bool(t)
+		result[catalogCustomAttributeValueType] = catalogCustomAttributeDefinitionTypeBoolean
 	case objects.CatalogCustomAttributeValueString:
 		result[catalogCustomAttributeValueStringValue] = string(t)
+		result[catalogCustomAttributeValueType] = catalogCustomAttributeDefinitionTypeString
 	case objects.CatalogCustomAttributeValueSelection:
 		result[catalogCustomAttributeValueSelectionUIDValues] = []string(t)
+		result[catalogCustomAttributeValueType] = catalogCustomAttributeDefinitionTypeSelection
 	case objects.CatalogCustomAttributeValueNumber:
 		result[catalogCustomAttributeValueNumberValue] = string(t)
+		result[catalogCustomAttributeValueType] = catalogCustomAttributeDefinitionTypeNumber
 	default:
 		return nil, fmt.Errorf("no Type found on input")
 	}
@@ -82,30 +92,18 @@ func catalogCustomAttributeValueSchemaToObject(input map[string]interface{}) (*o
 		Name:                        input[catalogCustomAttributeValueName].(string),
 	}
 
-	if booleanValue, ok := input[catalogCustomAttributeValueBooleanValue]; ok {
-		result.Type = objects.CatalogCustomAttributeValueBoolean(booleanValue.(bool))
-	} else if numberValue, ok := input[catalogCustomAttributeValueNumberValue]; ok {
-		result.Type = objects.CatalogCustomAttributeValueNumber(numberValue.(string))
-	} else if selectionValue, ok := input[catalogCustomAttributeValueSelectionUIDValues]; ok {
-		result.Type = objects.CatalogCustomAttributeValueSelection(selectionValue.([]string))
-	} else if stringValue, ok := input[catalogCustomAttributeValueStringValue]; ok {
-		result.Type = objects.CatalogCustomAttributeValueString(stringValue.(string))
-	} else {
+	switch input[catalogCustomAttributeValueType].(string) {
+	case catalogCustomAttributeDefinitionTypeBoolean:
+		result.Type = objects.CatalogCustomAttributeValueBoolean(input[catalogCustomAttributeValueBooleanValue].(bool))
+	case catalogCustomAttributeDefinitionTypeNumber:
+		result.Type = objects.CatalogCustomAttributeValueNumber(input[catalogCustomAttributeValueNumberValue].(string))
+	case catalogCustomAttributeDefinitionTypeSelection:
+		result.Type = objects.CatalogCustomAttributeValueSelection(input[catalogCustomAttributeValueSelectionUIDValues].([]string))
+	case catalogCustomAttributeDefinitionTypeString:
+		result.Type = objects.CatalogCustomAttributeValueString(input[catalogCustomAttributeValueStringValue].(string))
+	default:
 		return nil, errors.New("no *_type set in schema")
 	}
 
 	return result, nil
-}
-
-func catalogCustomAttributeValueValidate(input map[string]interface{}) error {
-	_, hasBool := input[catalogCustomAttributeValueBooleanValue]
-	_, hasString := input[catalogCustomAttributeValueStringValue]
-	_, hasNumber := input[catalogCustomAttributeValueNumberValue]
-	_, hasSelection := input[catalogCustomAttributeValueSelectionUIDValues]
-
-	if !hasBool && !hasString && !hasNumber && !hasSelection {
-		return fmt.Errorf("at least one *_type field must be set")
-	}
-
-	return nil
 }

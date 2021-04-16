@@ -56,7 +56,7 @@ func catalogQuickAmountSchemaToObject(input map[string]interface{}) *objects.Cat
 	return &objects.CatalogQuickAmount{
 		Type:    catalogQuickAmountTypeStrToEnum[input[catalogQuickAmountType].(string)],
 		Ordinal: input[catalogQuickAmountOrdinal].(int),
-		Amount:  moneySchemaToObject(input[catalogQuickAmountAmount].([]map[string]interface{})[0]),
+		Amount:  moneySchemaToObject(input[catalogQuickAmountAmount].(*schema.Set).List()[0].(map[string]interface{})),
 	}
 }
 
@@ -64,6 +64,6 @@ func catalogQuickAmountObjectToSchema(input *objects.CatalogQuickAmount) map[str
 	return map[string]interface{}{
 		catalogQuickAmountType:    catalogQuickAmountTypeEnumToStr[input.Type],
 		catalogQuickAmountOrdinal: input.Ordinal,
-		catalogQuickAmountAmount:  []map[string]interface{}{moneyObjectToSchema(input.Amount)},
+		catalogQuickAmountAmount:  schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.Amount)}),
 	}
 }

@@ -69,12 +69,10 @@ var catalogTaxSchema = &schema.Resource{
 		catalogTaxAppliesToCustomAmounts: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 		catalogTaxEnabled: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 	},
 }

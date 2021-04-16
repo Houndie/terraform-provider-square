@@ -50,7 +50,6 @@ var catalogQuickAmountsSettingsSchema = &schema.Resource{
 		catalogQuickAmountsSettingsEligibleForAutoAmounts: &schema.Schema{
 			Type:     schema.TypeBool,
 			Optional: true,
-			Default:  false,
 		},
 	},
 }
@@ -61,11 +60,10 @@ func catalogQuickAmountsSettingsSchemaToObject(input map[string]interface{}) *ob
 		EligibleForAutoAmounts: input[catalogQuickAmountsSettingsEligibleForAutoAmounts].(bool),
 	}
 
-	if amounts, ok := input[catalogQuickAmountsSettingsAmounts]; ok {
-		amountsList := amounts.([]map[string]interface{})
-		result.Amounts = make([]*objects.CatalogQuickAmount, len(amountsList))
-		for i, amount := range amountsList {
-			result.Amounts[i] = catalogQuickAmountSchemaToObject(amount)
+	if amounts := input[catalogQuickAmountsSettingsAmounts].([]interface{}); len(amounts) > 0 {
+		result.Amounts = make([]*objects.CatalogQuickAmount, len(amounts))
+		for i, amount := range amounts {
+			result.Amounts[i] = catalogQuickAmountSchemaToObject(amount.(map[string]interface{}))
 		}
 	}
 
@@ -79,7 +77,7 @@ func catalogQuickAmountsSettingsObjectToSchema(input *objects.CatalogQuickAmount
 	}
 
 	if input.Amounts != nil {
-		amounts := make([]map[string]interface{}, len(input.Amounts))
+		amounts := make([]interface{}, len(input.Amounts))
 		for i, amount := range input.Amounts {
 			amounts[i] = catalogQuickAmountObjectToSchema(amount)
 		}
