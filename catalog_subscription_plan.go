@@ -31,6 +31,7 @@ func catalogSubscriptionPlanSchemaToObject(input map[string]interface{}) *object
 
 	phases := input[catalogSubscriptionPlanPhases].([]interface{})
 	result.Phases = make([]*objects.SubscriptionPhase, len(phases))
+
 	for i, phase := range phases {
 		result.Phases[i] = subscriptionPhaseSchemaToObject(phase.(map[string]interface{}))
 	}
@@ -47,6 +48,7 @@ func catalogSubscriptionPlanObjectToSchema(input *objects.CatalogSubscriptionPla
 	for i, phase := range input.Phases {
 		phases[i] = subscriptionPhaseObjectToSchema(phase)
 	}
+
 	result[catalogSubscriptionPlanPhases] = phases
 
 	return result

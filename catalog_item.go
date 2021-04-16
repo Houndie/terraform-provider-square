@@ -41,6 +41,7 @@ var (
 	catalogItemProductTypeValidate = stringInSlice([]string{catalogItemProductTypeRegular, catalogItemProductTypeAppointmentsService}, false)
 )
 
+//nolint: unparam
 func stringInSlice(slice []string, ignoreCase bool) schema.SchemaValidateDiagFunc {
 	return func(input interface{}, path cty.Path) diag.Diagnostics {
 		return toDiag(validation.StringInSlice(slice, ignoreCase)(input, ""))

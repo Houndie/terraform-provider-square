@@ -17,13 +17,14 @@ var catalogCustomAttributeDefinitionNumberConfigSchema = &schema.Resource{
 		catalogCustomAttributeDefinitionNumberConfigPrecision: &schema.Schema{
 			Type:     schema.TypeInt,
 			Optional: true,
-			Default:  5,
+			Default:  5, //nolint: gomnd
 		},
 	},
 }
 
 func catalogCustomAttributeDefinitionNumberConfigSchemaToObject(input map[string]interface{}) *objects.CatalogCustomAttributeDefinitionNumberConfig {
 	precision := input[catalogCustomAttributeDefinitionNumberConfigPrecision].(int)
+
 	return &objects.CatalogCustomAttributeDefinitionNumberConfig{
 		Precision: &precision,
 	}
@@ -339,5 +340,4 @@ func catalogCustomAttributeDefinitionObjectToSchema(input *objects.CatalogCustom
 	}
 
 	return result, nil
-
 }

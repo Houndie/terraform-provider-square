@@ -141,6 +141,7 @@ func catalogPricingRuleObjectToSchema(input *objects.CatalogPricingRule) map[str
 		for i, id := range input.TimePeriodIDs {
 			ids[i] = id
 		}
+
 		result[catalogPricingRuleTimePeriodIDs] = ids
 	}
 

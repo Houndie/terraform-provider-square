@@ -395,6 +395,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 	if ids, ok := d.GetOk(catalogObjectCatalogV1IDs); ok {
 		idList := ids.([]interface{})
 		result.CatalogV1IDs = make([]*objects.CatalogV1ID, len(idList))
+
 		for i, id := range idList {
 			result.CatalogV1IDs[i] = catalogV1IDSchemaToObject(id.(map[string]interface{}))
 		}
@@ -403,6 +404,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 	if ids, ok := d.GetOk(catalogObjectPresentAtLocationIDs); ok {
 		idList := ids.([]interface{})
 		result.PresentAtLocationIDs = make([]string, len(idList))
+
 		for i, id := range idList {
 			result.PresentAtLocationIDs[i] = id.(string)
 		}
@@ -411,6 +413,7 @@ func catalogObjectResourceToObject(d *schema.ResourceData) (*objects.CatalogObje
 	if ids, ok := d.GetOk(catalogObjectAbsentAtLocationIDs); ok {
 		idList := ids.([]interface{})
 		result.AbsentAtLocationIDs = make([]string, len(idList))
+
 		for i, id := range idList {
 			result.AbsentAtLocationIDs[i] = id.(string)
 		}
@@ -625,6 +628,7 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 
 	if input.CustomAttributeValues != nil {
 		values := make([]interface{}, 0, len(input.CustomAttributeValues))
+
 		for _, value := range input.CustomAttributeValues {
 			parsedValue, err := catalogCustomAttributeValueObjectToSchema(value)
 			if err != nil {
@@ -634,7 +638,9 @@ func catalogObjectObjectToResource(input *objects.CatalogObject, d *schema.Resou
 			values = append(values, parsedValue)
 		}
 
-		d.Set(catalogObjectCustomAttributeValues, values)
+		if err := d.Set(catalogObjectCustomAttributeValues, values); err != nil {
+			return fmt.Errorf("error setting custom attribute values: %w", err)
+		}
 	}
 
 	switch t := input.Type.(type) {

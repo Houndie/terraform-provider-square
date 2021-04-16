@@ -79,18 +79,21 @@ func catalogDiscountSchemaToObject(input map[string]interface{}) (*objects.Catal
 		if percentage == "" {
 			return nil, errors.New("variable percentage chosen, but percentage field empty")
 		}
+
 		result.DiscountType = &objects.CatalogDiscountVariablePercentage{Percentage: percentage}
 	case catalogDiscountTypeFixedAmount:
 		amount := input[catalogDiscountAmountMoney].(*schema.Set).List()
 		if len(amount) == 0 {
 			return nil, errors.New("fixed amount chosen, but amount field empty")
 		}
+
 		result.DiscountType = &objects.CatalogDiscountFixedAmount{AmountMoney: moneySchemaToObject(amount[0].(map[string]interface{}))}
 	case catalogDiscountTypeVariableAmount:
 		amount := input[catalogDiscountAmountMoney].(*schema.Set).List()
 		if len(amount) == 0 {
 			return nil, errors.New("variable amount chosen, but amount field empty")
 		}
+
 		result.DiscountType = &objects.CatalogDiscountVariableAmount{AmountMoney: moneySchemaToObject(amount[0].(map[string]interface{}))}
 	default:
 		return nil, fmt.Errorf("unknown discount type: %s", input[catalogDiscountDiscountType].(string))

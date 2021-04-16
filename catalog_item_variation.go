@@ -273,12 +273,14 @@ func catalogItemVariationSchemaToObject(input map[string]interface{}) (*objects.
 
 	if overrides := input[catalogItemVariationLocationOverrides].([]interface{}); len(overrides) > 0 {
 		result.LocationOverrides = make([]*objects.ItemVariationLocationOverrides, len(overrides))
+
 		for i, override := range overrides {
-			var err error
-			result.LocationOverrides[i], err = itemVariationLocationOverridesSchemaToObject(override.(map[string]interface{}))
+			overrides, err := itemVariationLocationOverridesSchemaToObject(override.(map[string]interface{}))
 			if err != nil {
 				return nil, fmt.Errorf("error parsing location override: %w", err)
 			}
+
+			result.LocationOverrides[i] = overrides
 		}
 	}
 
@@ -325,12 +327,14 @@ func catalogItemVariationObjectToSchema(input *objects.CatalogItemVariation) (ma
 
 	if input.LocationOverrides != nil {
 		overrides := make([]interface{}, len(input.LocationOverrides))
+
 		for i, override := range input.LocationOverrides {
-			var err error
-			overrides[i], err = itemVariationLocationOverridesObjectToSchema(override)
+			override, err := itemVariationLocationOverridesObjectToSchema(override)
 			if err != nil {
 				return nil, fmt.Errorf("error calculating item variation override: %w", err)
 			}
+
+			overrides[i] = override
 		}
 
 		result[catalogItemVariationLocationOverrides] = schema.NewSet(schema.HashResource(itemVariationLocationOverridesSchema), overrides)

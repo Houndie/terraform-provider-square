@@ -81,6 +81,7 @@ func catalogQuickAmountsSettingsObjectToSchema(input *objects.CatalogQuickAmount
 		for i, amount := range input.Amounts {
 			amounts[i] = catalogQuickAmountObjectToSchema(amount)
 		}
+
 		result[catalogQuickAmountsSettingsAmounts] = amounts
 	}
 
