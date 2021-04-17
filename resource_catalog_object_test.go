@@ -60,7 +60,7 @@ func removedConfig(token string) string {
 	return providerBlock(token)
 }
 
-func TestAccCatalogObject(t *testing.T) {
+func TestAccCatalogItemVariation(t *testing.T) {
 	t.Parallel()
 
 	token := os.Getenv("TEST_TOKEN")
@@ -102,6 +102,60 @@ func TestAccCatalogObject(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					checkCatalogObjectDoesntExist("catalog_object.test_object"),
 					checkCatalogObjectDoesntExist("catalog_object.test_variation"),
+				),
+			},
+		},
+	})
+}
+
+func discountConfig(token string) string {
+	return providerBlock(token) + `
+
+resource "catalog_object" "test_discount" {
+	provider = "test-provider"
+	type = "DISCOUNT"
+
+	discount_data {
+		name = "discount1"
+		discount_type = "FIXED_AMOUNT"
+		amount_money {
+			amount = 5
+			currency = "USD"
+		}
+	}
+}`
+}
+
+func TestAccCatalogItemDiscount(t *testing.T) {
+	t.Parallel()
+
+	token := os.Getenv("TEST_TOKEN")
+	if token == "" {
+		t.Log("Test skipped as TEST_TOKEN not set")
+		t.Skip()
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"test-provider": func() (*schema.Provider, error) { return Provider(), nil }, //nolint:unparam
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: discountConfig(token),
+				Check: resource.ComposeTestCheckFunc(
+					checkCatalogObjectExists("catalog_object.test_discount"),
+					resource.TestCheckResourceAttr("catalog_object.test_discount", "type", "DISCOUNT"),
+					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.name", "discount1"),
+					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.discount_type", "FIXED_AMOUNT"),
+					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.amount_money.0.amount", "5"),
+					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.amount_money.0.currency", "USD"),
+					checkCatalogObjectRemote("catalog_object.test_discount", token),
+				),
+			},
+			{
+				Config: removedConfig(token),
+				Check: resource.ComposeTestCheckFunc(
+					checkCatalogObjectDoesntExist("catalog_object.test_discount"),
 				),
 			},
 		},
