@@ -26,5 +26,5 @@ jobs:
       - run: mkdir terraform && cd terraform && wget https://releases.hashicorp.com/terraform/0.15.0/terraform_0.15.0_linux_amd64.zip && unzip terraform_0.15.0_linux_amd64.zip && cd ..
 
       - run: go build -v .
-      - run: PATH=terraform:$PATH TEST_ACC=1 go test -v ./...
+      - run: PATH=terraform:$PATH TF_ACC=1 go test -v ./...
       - run: golangci-lint run
