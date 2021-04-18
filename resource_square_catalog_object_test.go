@@ -18,7 +18,7 @@ import (
 
 func providerBlock(token string) string {
 	return fmt.Sprintf(`
-provider "test-provider" {
+provider "square" {
 	access_token = "%s"
 	environment = "sandbox"
 }`, token)
@@ -27,8 +27,7 @@ provider "test-provider" {
 func upsertConfig(token string) string {
 	return providerBlock(token) + `
 
-resource "catalog_object" "test_object" {
-	provider = "test-provider"
+resource "square_catalog_object" "test_object" {
 	type = "ITEM"
 	item_data {
 		name = "my-item"
@@ -39,12 +38,11 @@ resource "catalog_object" "test_object" {
 func addVariation(token string) string {
 	return upsertConfig(token) + `
 
-resource "catalog_object" "test_variation" {
-	provider = "test-provider"
+resource "square_catalog_object" "test_variation" {
 	type = "ITEM_VARIATION"
 
 	item_variation_data {
-		item_id = catalog_object.test_object.id
+		item_id = square_catalog_object.test_object.id
 		name = "variation1"
 		pricing_type = "FIXED_PRICING"
 
@@ -71,37 +69,37 @@ func TestAccCatalogItemVariation(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"test-provider": func() (*schema.Provider, error) { return Provider(), nil }, //nolint:unparam
+			"square": func() (*schema.Provider, error) { return Provider(), nil }, //nolint:unparam
 		},
 		Steps: []resource.TestStep{
 			{
 				Config: upsertConfig(token),
 				Check: resource.ComposeTestCheckFunc(
-					checkCatalogObjectExists("catalog_object.test_object"),
-					resource.TestCheckResourceAttr("catalog_object.test_object", "type", "ITEM"),
-					resource.TestCheckResourceAttr("catalog_object.test_object", "item_data.0.name", "my-item"),
-					checkCatalogObjectRemote("catalog_object.test_object", token),
+					checkCatalogObjectExists("square_catalog_object.test_object"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_object", "type", "ITEM"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_object", "item_data.0.name", "my-item"),
+					checkCatalogObjectRemote("square_catalog_object.test_object", token),
 				),
 			},
 			{
 				Config: addVariation(token),
 				Check: resource.ComposeTestCheckFunc(
-					checkCatalogObjectExists("catalog_object.test_object"),
-					checkCatalogObjectExists("catalog_object.test_variation"),
-					resource.TestCheckResourceAttr("catalog_object.test_variation", "type", "ITEM_VARIATION"),
-					resource.TestCheckResourceAttr("catalog_object.test_variation", "item_variation_data.0.name", "variation1"),
-					resource.TestCheckResourceAttr("catalog_object.test_variation", "item_variation_data.0.pricing_type", "FIXED_PRICING"),
-					resource.TestCheckResourceAttr("catalog_object.test_variation", "item_variation_data.0.price_money.0.amount", "5"),
-					resource.TestCheckResourceAttr("catalog_object.test_variation", "item_variation_data.0.price_money.0.currency", "USD"),
-					checkCatalogObjectRemote("catalog_object.test_object", token),
-					checkCatalogObjectRemote("catalog_object.test_variation", token),
+					checkCatalogObjectExists("square_catalog_object.test_object"),
+					checkCatalogObjectExists("square_catalog_object.test_variation"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_variation", "type", "ITEM_VARIATION"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_variation", "item_variation_data.0.name", "variation1"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_variation", "item_variation_data.0.pricing_type", "FIXED_PRICING"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_variation", "item_variation_data.0.price_money.0.amount", "5"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_variation", "item_variation_data.0.price_money.0.currency", "USD"),
+					checkCatalogObjectRemote("square_catalog_object.test_object", token),
+					checkCatalogObjectRemote("square_catalog_object.test_variation", token),
 				),
 			},
 			{
 				Config: removedConfig(token),
 				Check: resource.ComposeTestCheckFunc(
-					checkCatalogObjectDoesntExist("catalog_object.test_object"),
-					checkCatalogObjectDoesntExist("catalog_object.test_variation"),
+					checkCatalogObjectDoesntExist("square_catalog_object.test_object"),
+					checkCatalogObjectDoesntExist("square_catalog_object.test_variation"),
 				),
 			},
 		},
@@ -111,8 +109,7 @@ func TestAccCatalogItemVariation(t *testing.T) {
 func discountConfig(token string) string {
 	return providerBlock(token) + `
 
-resource "catalog_object" "test_discount" {
-	provider = "test-provider"
+resource "square_catalog_object" "test_discount" {
 	type = "DISCOUNT"
 
 	discount_data {
@@ -137,25 +134,25 @@ func TestAccCatalogItemDiscount(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"test-provider": func() (*schema.Provider, error) { return Provider(), nil }, //nolint:unparam
+			"square": func() (*schema.Provider, error) { return Provider(), nil }, //nolint:unparam
 		},
 		Steps: []resource.TestStep{
 			{
 				Config: discountConfig(token),
 				Check: resource.ComposeTestCheckFunc(
-					checkCatalogObjectExists("catalog_object.test_discount"),
-					resource.TestCheckResourceAttr("catalog_object.test_discount", "type", "DISCOUNT"),
-					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.name", "discount1"),
-					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.discount_type", "FIXED_AMOUNT"),
-					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.amount_money.0.amount", "5"),
-					resource.TestCheckResourceAttr("catalog_object.test_discount", "discount_data.0.amount_money.0.currency", "USD"),
-					checkCatalogObjectRemote("catalog_object.test_discount", token),
+					checkCatalogObjectExists("square_catalog_object.test_discount"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_discount", "type", "DISCOUNT"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_discount", "discount_data.0.name", "discount1"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_discount", "discount_data.0.discount_type", "FIXED_AMOUNT"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_discount", "discount_data.0.amount_money.0.amount", "5"),
+					resource.TestCheckResourceAttr("square_catalog_object.test_discount", "discount_data.0.amount_money.0.currency", "USD"),
+					checkCatalogObjectRemote("square_catalog_object.test_discount", token),
 				),
 			},
 			{
 				Config: removedConfig(token),
 				Check: resource.ComposeTestCheckFunc(
-					checkCatalogObjectDoesntExist("catalog_object.test_discount"),
+					checkCatalogObjectDoesntExist("square_catalog_object.test_discount"),
 				),
 			},
 		},

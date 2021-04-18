@@ -37,7 +37,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"catalog_object": resourceCatalogObject(),
+			"square_catalog_object": resourceCatalogObject(),
 		},
 		ConfigureContextFunc: func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 			var environment objects.Environment
