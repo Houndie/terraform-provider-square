@@ -22,12 +22,22 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.38.0
-      - run: mkdir terraform && cd terraform && wget https://releases.hashicorp.com/terraform/0.15.0/terraform_0.15.0_linux_amd64.zip && unzip terraform_0.15.0_linux_amd64.zip && cd ..
+      - run: 
+          name: Install Linter
+          command: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.38.0
+      - run: 
+          name: Install terraform
+          command: mkdir terraform && cd terraform && wget https://releases.hashicorp.com/terraform/0.15.0/terraform_0.15.0_linux_amd64.zip && unzip terraform_0.15.0_linux_amd64.zip && cd ..
 
-      - run: go build -v .
-      - run: PATH=terraform:$PATH TF_ACC=1 go test -v ./...
-      - run: golangci-lint run
+      - run: 
+          name: Build
+          command: go build -v .
+      - run: 
+          name: Test
+          command: PATH=terraform:$PATH TF_ACC=1 go test -v ./...
+      - run: 
+          name: Lint
+          command: golangci-lint run
   release:
     docker:
       # specify the version
@@ -36,9 +46,15 @@ jobs:
     steps:
       - checkout
 
-      - run: echo -e "$GPG_KEY" | gpg --import --pinentry-mode loopback --batch --passphrase $GPG_PASSPHRASE
       - run: 
-          command: curl -sL https://git.io/goreleaser | bash
+          name: Import GPG Key
+          command: echo -e "$GPG_KEY" | gpg --import --pinentry-mode loopback --batch --passphrase $GPG_PASSPHRASE
+      - run: 
+          name: Install tools
+          command: go get github.com/Houndie/toolbox@v0.4.0 && toolbox -v sync
+      - run: 
+          Name: Goreleaser
+          command: toolbox do -- goreleaser
           no_output_timeout: 30m
 
 workflows:
