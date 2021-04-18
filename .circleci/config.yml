@@ -44,6 +44,10 @@ jobs:
       - image: circleci/golang:1.16
     working_directory: /go/src/github.com/Houndie/terraform-provider-square
     steps:
+      - run: 
+          name: Install toolbox
+          command: pushd $GOPATH && go get github.com/Houndie/toolbox@v0.4.0 && popd
+
       - checkout
 
       - run: 
@@ -51,10 +55,10 @@ jobs:
           command: echo -e "$GPG_KEY" | gpg --import --pinentry-mode loopback --batch --passphrase $GPG_PASSPHRASE
       - run: 
           name: Install tools
-          command: go get github.com/Houndie/toolbox@v0.4.0 && toolbox -v sync
+          command: toolbox -v sync
       - run: 
           Name: Goreleaser
-          command: toolbox do -- goreleaser
+          command: toolbox do -- goreleaser --snapshot
           no_output_timeout: 30m
 
 workflows:
@@ -71,5 +75,5 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]\.[0-9]\.[0-9]$/
-            branches:
-              ignore: /.*/
+                #branches:
+                #  ignore: /.*/
