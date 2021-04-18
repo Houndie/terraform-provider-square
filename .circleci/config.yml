@@ -58,7 +58,7 @@ jobs:
           command: toolbox -v sync
       - run: 
           Name: Goreleaser
-          command: toolbox do -- goreleaser --snapshot
+          command: toolbox do -- goreleaser
           no_output_timeout: 30m
 
 workflows:
@@ -75,5 +75,5 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]\.[0-9]\.[0-9]$/
-                #branches:
-                #  ignore: /.*/
+            branches:
+              ignore: /.*/
