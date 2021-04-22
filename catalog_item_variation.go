@@ -59,14 +59,17 @@ var (
 	catalogPricingTypeStrToEnum = map[string]objects.CatalogPricingType{
 		catalogPricingTypeFixed:    objects.CatalogPricingTypeFixed,
 		catalogPricingTypeVariable: objects.CatalogPricingTypeVariable,
+		"":                         "",
 	}
 
 	catalogPricingTypeEnumToStr = map[objects.CatalogPricingType]string{
 		objects.CatalogPricingTypeFixed:    catalogPricingTypeFixed,
 		objects.CatalogPricingTypeVariable: catalogPricingTypeVariable,
+		"":                                 "",
 	}
 
-	catalogPricingTypeValidate = stringInSlice([]string{catalogPricingTypeFixed, catalogPricingTypeVariable}, false)
+	catalogPricingTypeValidate         = stringInSlice([]string{catalogPricingTypeFixed, catalogPricingTypeVariable}, false)
+	catalogPricingTypeValidateOptional = stringInSlice([]string{catalogPricingTypeFixed, catalogPricingTypeVariable, ""}, false)
 
 	inventoryAlertType = stringInSlice([]string{inventoryAlertTypeNone, inventoryAlertTypeLowQuantity}, false)
 )
@@ -85,8 +88,8 @@ var itemVariationLocationOverridesSchema = &schema.Resource{
 		},
 		itemVariationLocationOverridesPricingType: &schema.Schema{
 			Type:             schema.TypeString,
-			Required:         true,
-			ValidateDiagFunc: catalogPricingTypeValidate,
+			Optional:         true,
+			ValidateDiagFunc: catalogPricingTypeValidateOptional,
 		},
 		itemVariationLocationOverridesTrackInventory: &schema.Schema{
 			Type:     schema.TypeBool,
@@ -131,8 +134,11 @@ func itemVariationLocationOverridesObjectToSchema(input *objects.ItemVariationLo
 	result := map[string]interface{}{
 		itemVariationLocationOverridesLocationID:     input.LocationID,
 		itemVariationLocationOverridesTrackInventory: input.TrackInventory,
-		itemVariationLocationOverridesPriceMoney:     schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.PriceMoney)}),
 		itemVariationLocationOverridesPricingType:    catalogPricingTypeEnumToStr[input.PricingType],
+	}
+
+	if input.PriceMoney != nil {
+		result[itemVariationLocationOverridesPriceMoney] = schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.PriceMoney)})
 	}
 
 	switch t := input.InventoryAlertType.(type) {
