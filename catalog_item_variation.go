@@ -82,7 +82,7 @@ var itemVariationLocationOverridesSchema = &schema.Resource{
 		},
 		itemVariationLocationOverridesPriceMoney: &schema.Schema{
 			Type:     schema.TypeSet,
-			Required: true,
+			Optional: true,
 			MaxItems: 1,
 			Elem:     moneySchema,
 		},
@@ -141,14 +141,16 @@ func itemVariationLocationOverridesObjectToSchema(input *objects.ItemVariationLo
 		result[itemVariationLocationOverridesPriceMoney] = schema.NewSet(schema.HashResource(moneySchema), []interface{}{moneyObjectToSchema(input.PriceMoney)})
 	}
 
-	switch t := input.InventoryAlertType.(type) {
-	case *objects.InventoryAlertTypeNone:
-		result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeNone
-	case *objects.InventoryAlertTypeLowQuantity:
-		result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeLowQuantity
-		result[itemVariationLocationOverridesInventoryAlertThreshold] = t.Threshold
-	default:
-		return nil, errors.New("unknown inventory alert type found")
+	if input.InventoryAlertType != nil {
+		switch t := input.InventoryAlertType.(type) {
+		case *objects.InventoryAlertTypeNone:
+			result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeNone
+		case *objects.InventoryAlertTypeLowQuantity:
+			result[itemVariationLocationOverridesInventoryAlertType] = inventoryAlertTypeLowQuantity
+			result[itemVariationLocationOverridesInventoryAlertThreshold] = t.Threshold
+		default:
+			return nil, errors.New("unknown inventory alert type found")
+		}
 	}
 
 	return result, nil
