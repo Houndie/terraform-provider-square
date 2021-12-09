@@ -345,7 +345,7 @@ func catalogItemVariationObjectToSchema(input *objects.CatalogItemVariation) (ma
 			overrides[i] = override
 		}
 
-		result[catalogItemVariationLocationOverrides] = schema.NewSet(schema.HashResource(itemVariationLocationOverridesSchema), overrides)
+		result[catalogItemVariationLocationOverrides] = overrides
 	}
 
 	switch t := input.InventoryAlertType.(type) {
