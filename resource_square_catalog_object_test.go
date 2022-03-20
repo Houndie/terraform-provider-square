@@ -1,30 +1,6 @@
 package main
 
-import (
-	"context"
-	"fmt"
-	"net/http"
-	"os"
-	"testing"
-	"time"
-
-	"github.com/Houndie/square-go"
-	"github.com/Houndie/square-go/catalog"
-	"github.com/Houndie/square-go/objects"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-)
-
-func providerBlock(token string) string {
-	return fmt.Sprintf(`
-provider "square" {
-	access_token = "%s"
-	environment = "sandbox"
-}`, token)
-}
-
-func upsertConfig(token string) string {
+/*func upsertConfig(token string) string {
 	return providerBlock(token) + `
 
 resource "square_catalog_object" "test_object" {
@@ -157,59 +133,4 @@ func TestAccCatalogItemDiscount(t *testing.T) {
 			},
 		},
 	})
-}
-
-func checkCatalogObjectExists(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// retrieve the resource by name from state
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("Widget ID is not set")
-		}
-
-		return nil
-	}
-}
-
-func checkCatalogObjectDoesntExist(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// retrieve the resource by name from state
-		_, ok := s.RootModule().Resources[resourceName]
-		if ok {
-			return fmt.Errorf("Found: %s", resourceName)
-		}
-
-		return nil
-	}
-}
-
-func checkCatalogObjectRemote(resourceName, apiKey string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// retrieve the resource by name from state
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-
-		client, err := square.NewClient(apiKey, objects.Sandbox, &http.Client{
-			Timeout: 10 * time.Second,
-		})
-		if err != nil {
-			return fmt.Errorf("error creating square client: %w", err)
-		}
-
-		_, err = client.Catalog.RetrieveObject(context.Background(), &catalog.RetrieveObjectRequest{
-			ObjectID: rs.Primary.ID,
-		})
-
-		if err != nil {
-			return fmt.Errorf("error retrieving remote object: %w", err)
-		}
-
-		return nil
-	}
-}
+}*/
