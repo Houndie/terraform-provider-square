@@ -5,6 +5,8 @@ github.com/Houndie/square-go v0.0.0-20210415111528-1b8587305cbd h1:xd7z3h7oE565S
 github.com/Houndie/square-go v0.0.0-20210415111528-1b8587305cbd/go.mod h1:WMyU22z82iASq6IA3QfhjYsv7BkfM4wfkUU8b84kNuI=
 github.com/Houndie/square-go v0.1.0 h1:FbnLjfb5rsAX8grwrIVHU+t6qT5eu4wbdN67GLLIts0=
 github.com/Houndie/square-go v0.1.0/go.mod h1:WMyU22z82iASq6IA3QfhjYsv7BkfM4wfkUU8b84kNuI=
+github.com/Houndie/square-go v0.1.1 h1:yLppXQdXCS3Py/HRXlg9GiOcKcI4QsGUL4huGi9BJXU=
+github.com/Houndie/square-go v0.1.1/go.mod h1:WMyU22z82iASq6IA3QfhjYsv7BkfM4wfkUU8b84kNuI=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.16 h1:FtSW/jqD+l4ba5iPBj9CODVtgfYAD8w2wS923g/cFDk=
 github.com/Microsoft/go-winio v0.4.16/go.mod h1:XB6nPKklQyQ7GC9LdcBEcBl8PF76WugXOPRXwdLnMv0=
