@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
 
@@ -26,7 +25,7 @@ func init() {
 				return fmt.Errorf("Cannot sweep, test token not set")
 			}
 
-			client, err := square.NewClient(token, objects.Sandbox, &http.Client{})
+			client, err := square.NewClient(token, objects.Sandbox)
 			if err != nil {
 				return fmt.Errorf("error creating square client in sweeper: %w", err)
 			}
