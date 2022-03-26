@@ -13,6 +13,7 @@ import (
 	"github.com/Houndie/square-go"
 	"github.com/Houndie/square-go/catalog"
 	"github.com/Houndie/square-go/objects"
+	"github.com/Houndie/square-go/options"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -208,9 +209,9 @@ func checkCatalogItemDoesntExist(resourceName string) resource.TestCheckFunc {
 //nolint:dupl
 func checkCatalogItemDoesntExistRemote(itemName, apiKey string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client, err := square.NewClient(apiKey, objects.Sandbox, &http.Client{
+		client, err := square.NewClient(apiKey, objects.Sandbox, options.WithHTTPClient(&http.Client{
 			Timeout: 10 * time.Second,
-		})
+		}))
 		if err != nil {
 			return fmt.Errorf("error creating square client: %w", err)
 		}
@@ -247,9 +248,9 @@ func checkCatalogItemRemote(resourceName, apiKey string) resource.TestCheckFunc 
 			return fmt.Errorf("Not found: %s", resourceName)
 		}
 
-		client, err := square.NewClient(apiKey, objects.Sandbox, &http.Client{
+		client, err := square.NewClient(apiKey, objects.Sandbox, options.WithHTTPClient(&http.Client{
 			Timeout: 10 * time.Second,
-		})
+		}))
 		if err != nil {
 			return fmt.Errorf("error creating square client: %w", err)
 		}

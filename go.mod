@@ -3,7 +3,7 @@ module github.com/Houndie/terraform-provider-square
 go 1.16
 
 require (
-	github.com/Houndie/square-go v0.0.0-20210415111528-1b8587305cbd
+	github.com/Houndie/square-go v0.1.0
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.12.0

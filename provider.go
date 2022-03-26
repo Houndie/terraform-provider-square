@@ -8,14 +8,16 @@ import (
 
 	"github.com/Houndie/square-go"
 	"github.com/Houndie/square-go/objects"
+	"github.com/Houndie/square-go/options"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
-	ProviderAccessToken = "access_token"
-	ProviderEnvironment = "environment"
-	ProviderTimeout     = "timeout"
+	ProviderAccessToken  = "access_token"
+	ProviderEnvironment  = "environment"
+	ProviderTimeout      = "timeout"
+	ProviderMaxRetryTime = "max_retry_time_seconds"
 )
 
 func Provider() *schema.Provider {
@@ -35,6 +37,11 @@ func Provider() *schema.Provider {
 				Optional: true,
 				Default:  30, //nolint:gomnd
 			},
+			ProviderMaxRetryTime: &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  -1,
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"square_catalog_item":     resourceCatalogItem(),
@@ -51,11 +58,17 @@ func Provider() *schema.Provider {
 				return nil, diag.Errorf("unknown provider environment: %s", d.Get(ProviderEnvironment).(string))
 			}
 
-			httpClient := &http.Client{
-				Timeout: time.Duration(d.Get(ProviderTimeout).(int)) * time.Second, //nolint:durationcheck
+			o := []options.ClientOption{
+				options.WithHTTPClient(&http.Client{
+					Timeout: time.Duration(d.Get(ProviderTimeout).(int)) * time.Second, //nolint:durationcheck
+				}),
 			}
 
-			client, err := square.NewClient(d.Get(ProviderAccessToken).(string), environment, httpClient)
+			if t := d.Get(ProviderMaxRetryTime).(int); t != -1 {
+				o = append(o, options.WithRateLimit(time.Duration(t)*time.Second))
+			}
+
+			client, err := square.NewClient(d.Get(ProviderAccessToken).(string), environment, o...)
 			if err != nil {
 				return nil, diag.FromErr(fmt.Errorf("error creating square client: %w", err))
 			}
