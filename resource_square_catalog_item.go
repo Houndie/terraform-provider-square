@@ -45,6 +45,10 @@ func resourceCatalogItem() *schema.Resource {
 				Required: true,
 				Elem:     variationSchema,
 			},
+			"version": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 		CreateContext: resourceCatalogUpsert(catalogItemResourceToObject, catalogItemObjectToResource),
 		ReadContext:   resourceCatalogRead(catalogItemObjectToResource),
@@ -108,6 +112,7 @@ func catalogItemResourceToObject(d *schema.ResourceData) (*objects.CatalogObject
 			Name:       d.Get("name").(string),
 			Variations: variations,
 		},
+		Version: d.Get("version").(int),
 	}, nil
 }
 
@@ -150,6 +155,10 @@ func catalogItemObjectToResource(o *objects.CatalogObject, d *schema.ResourceDat
 
 	if err := d.Set("variation", schema.NewSet(schema.HashResource(variationSchema), variations)); err != nil {
 		return fmt.Errorf("error setting variations: %w", err)
+	}
+
+	if err := d.Set("version", o.Version); err != nil {
+		return fmt.Errorf("error setting version: %w", err)
 	}
 
 	return nil

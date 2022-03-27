@@ -26,6 +26,10 @@ func resourceCatalogDiscount() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"version": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 		CreateContext: resourceCatalogUpsert(catalogDiscountResourceToObject, catalogDiscountObjectToResource),
 		ReadContext:   resourceCatalogRead(catalogDiscountObjectToResource),
@@ -51,24 +55,44 @@ func catalogDiscountResourceToObject(d *schema.ResourceData) (*objects.CatalogOb
 
 	switch d.Get("type") {
 	case catalogDiscountFixedPercentage:
+		percentage := d.Get("percentage").(string)
+		if percentage == "" {
+			return nil, fmt.Errorf("percentage required with a type of %s", catalogDiscountFixedPercentage)
+		}
+
 		discountType = &objects.CatalogDiscountFixedPercentage{
-			Percentage: d.Get("percentage").(string),
+			Percentage: percentage,
 		}
 	case catalogDiscountVariablePercentage:
+		percentage := d.Get("percentage").(string)
+		if percentage == "" {
+			return nil, fmt.Errorf("percentage required with a type of %s", catalogDiscountVariablePercentage)
+		}
+
 		discountType = &objects.CatalogDiscountVariablePercentage{
-			Percentage: d.Get("percentage").(string),
+			Percentage: percentage,
 		}
 	case catalogDiscountFixedAmount:
+		amount := d.Get("amount").(int)
+		if amount == 0 {
+			return nil, fmt.Errorf("amount required with a type of %s", catalogDiscountFixedAmount)
+		}
+
 		discountType = &objects.CatalogDiscountFixedAmount{
 			AmountMoney: &objects.Money{
-				Amount:   d.Get("amount").(int),
+				Amount:   amount,
 				Currency: "USD",
 			},
 		}
 	case catalogDiscountVariableAmount:
+		amount := d.Get("amount").(int)
+		if amount == 0 {
+			return nil, fmt.Errorf("amount required with a type of %s", catalogDiscountVariableAmount)
+		}
+
 		discountType = &objects.CatalogDiscountVariableAmount{
 			AmountMoney: &objects.Money{
-				Amount:   d.Get("amount").(int),
+				Amount:   amount,
 				Currency: "USD",
 			},
 		}
@@ -80,6 +104,7 @@ func catalogDiscountResourceToObject(d *schema.ResourceData) (*objects.CatalogOb
 			Name:         d.Get("name").(string),
 			DiscountType: discountType,
 		},
+		Version: d.Get("version").(int),
 	}, nil
 }
 
@@ -128,6 +153,10 @@ func catalogDiscountObjectToResource(o *objects.CatalogObject, d *schema.Resourc
 		if err := d.Set("amount", t.AmountMoney.Amount); err != nil {
 			return fmt.Errorf("error setting variable amount amount")
 		}
+	}
+
+	if err := d.Set("version", o.Version); err != nil {
+		return fmt.Errorf("error setting version: %w", err)
 	}
 
 	return nil
